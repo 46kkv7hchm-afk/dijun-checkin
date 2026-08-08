@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>帝君老师·暑假奖惩打卡</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f2f4f7; color: #1f2933; font-size: 15px; line-height: 1.5;
+    max-width: 520px; margin: 0 auto; padding-bottom: 80px;
+  }
+  header {
+    background: linear-gradient(135deg, #5b6ef5, #7b5bf5);
+    color: #fff; padding: 14px 16px 12px; position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { margin: 0; font-size: 17px; font-weight: 700; }
+  .datebar { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .datebar button { background: rgba(255,255,255,.22); border: none; color: #fff; font-size: 16px; width: 38px; height: 34px; border-radius: 8px; }
+  .datebar .cur { font-size: 15px; font-weight: 600; }
+  .tabs { display: flex; position: sticky; top: 86px; z-index: 9; background: #fff; border-bottom: 1px solid #e4e7eb; }
+  .tabs button { flex: 1; padding: 12px 4px; border: none; background: #fff; font-size: 13.5px; color: #687280; font-weight: 600; border-bottom: 3px solid transparent; }
+  .tabs button.active { color: #5b6ef5; border-bottom-color: #5b6ef5; }
+  .wrap { padding: 12px; }
+  .card { background: #fff; border-radius: 12px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .group-title { font-size: 14px; font-weight: 700; color: #5b6ef5; margin: 4px 0 8px; padding-left: 9px; border-left: 4px solid #5b6ef5; }
+  .item { display: flex; align-items: flex-start; padding: 9px 0; border-top: 1px dashed #eceef1; }
+  .item:first-child { border-top: none; }
+  .item .chk { flex: 0 0 auto; margin: 2px 10px 0 0; }
+  .item .chk input { width: 22px; height: 22px; }
+  .item .body { flex: 1; min-width: 0; }
+  .item .ct { font-weight: 600; font-size: 14.5px; }
+  .item .meta { font-size: 12.5px; color: #7b8794; margin-top: 2px; }
+  .item .reward { font-size: 12.5px; color: #c2410c; margin-top: 3px; }
+  .item .note { font-size: 12px; color: #9aa5b1; margin-top: 2px; }
+  .sign { margin-top: 6px; }
+  .sign input { width: 100%; border: 1px solid #d9dee4; border-radius: 7px; padding: 6px 8px; font-size: 13px; }
+  .streak-badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-top: 5px; }
+  .streak-on { background: #fff4e6; color: #c2410c; }
+  .streak-off { background: #eef2f7; color: #9aa5b1; }
+  .addbtn { margin-top: 7px; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; border-radius: 7px; padding: 5px 10px; font-size: 12.5px; font-weight: 600; }
+  .lottery-box { background: linear-gradient(135deg,#fef3c7,#fde68a); border-radius: 12px; padding: 14px; text-align: center; margin-bottom: 12px; color:#92400e; }
+  .lottery-box .num { font-size: 34px; font-weight: 800; line-height: 1; }
+  .lottery-box .lbl { font-size: 13px; margin-top: 4px; }
+  .btn { background: #5b6ef5; color:#fff; border:none; border-radius: 9px; padding: 10px 14px; font-size: 14px; font-weight: 600; width: 100%; }
+  .btn.sec { background: #eef2f7; color: #3e4c59; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  select, input[type=text], input[type=number], input[type=date] {
+    width: 100%; border: 1px solid #d9dee4; border-radius: 8px; padding: 9px; font-size: 14px; margin-bottom: 8px;
+  }
+  .log-item { background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .log-item .t { font-size: 13px; color: #9aa5b1; }
+  .log-item .p { font-weight: 700; margin: 2px 0; }
+  .log-item .pn { font-size: 13px; color: #c2410c; }
+  .hist { font-size: 12.5px; color: #52606d; padding: 6px 0; border-bottom: 1px solid #f0f2f5; }
+  .hint { font-size: 12px; color: #9aa5b1; text-align:center; margin: 6px 0 14px; }
+  .hidden { display: none; }
+  .drawbtn { margin-top: 10px; background: #fff; color: #92400e; border: none; border-radius: 9px; padding: 11px 14px; font-size: 14.5px; font-weight: 800; width: 100%; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+  .drawbtn:active { transform: scale(.97); }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal.hidden { display: none; }
+  .modal-card { background: #fff; border-radius: 18px; padding: 34px 24px; width: 82%; max-width: 340px; text-align: center; }
+  .spin { font-size: 64px; animation: roll .12s linear infinite; }
+  @keyframes roll { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+  .result { font-size: 23px; font-weight: 800; color: #c2410c; margin: 14px 0; animation: pop .45s; }
+  @keyframes pop { 0%{transform:scale(.3);opacity:0} 100%{transform:scale(1);opacity:1} }
+  .draw-close { margin-top: 14px; background: #5b6ef5; color: #fff; border: none; border-radius: 10px; padding: 11px 20px; font-size: 15px; font-weight: 700; }
+  .stat-line { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f0f2f5; font-size:14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📋 帝君老师·暑假奖惩打卡</h1>
+  <div class="datebar">
+    <button id="prev">‹</button>
+    <span class="cur" id="curDate"></span>
+    <button id="next">›</button>
+  </div>
+</header>
+<div class="tabs">
+  <button data-tab="reward" class="active">🎁 奖励打卡</button>
+  <button data-tab="plan">⏰ 时间规划</button>
+  <button data-tab="punish">⚠️ 惩罚记录</button>
+  <button data-tab="stat">📊 统计</button>
+</div>
+<div class="wrap">
+  <div id="tab-reward"></div>
+  <div id="tab-plan" class="hidden"></div>
+  <div id="tab-punish" class="hidden"></div>
+  <div id="tab-stat" class="hidden"></div>
+</div>
+
+<div id="drawModal" class="modal hidden">
+  <div class="modal-card">
+    <div id="drawSpin" class="spin">🎰</div>
+    <div id="drawResult" class="result hidden"></div>
+    <button id="drawClose" class="draw-close hidden">收下奖品 🎁</button>
+  </div>
+</div>
+
+<script>
+const STORE = 'dijun_checkin_v1';
+const TIERS = [
+  {key:'longzhu', label:'龙珠', prob:0.06},
+  {key:'a', label:'0.1-0.4元', prob:0.20},
+  {key:'b', label:'0.5-0.9元', prob:0.15},
+  {key:'c', label:'1-1.5元', prob:0.10},
+  {key:'d', label:'2元', prob:0.08},
+  {key:'e', label:'2.5元', prob:0.07},
+  {key:'f', label:'3元', prob:0.07},
+];
+const DEFAULT_PRIZES = [
+  {name:'龙珠1颗'},
+  {name:'0.1元红包', price:0.1},{name:'0.2元红包', price:0.2},{name:'0.3元红包', price:0.3},{name:'0.4元红包', price:0.4},
+  {name:'0.5元红包', price:0.5},{name:'0.6元红包', price:0.6},{name:'0.7元红包', price:0.7},{name:'0.8元红包', price:0.8},{name:'0.9元红包', price:0.9},
+  {name:'1元红包', price:1},{name:'1.2元红包', price:1.2},{name:'1.5元红包', price:1.5},
+  {name:'2元红包', price:2},{name:'2.5元红包', price:2.5},{name:'3元红包', price:3},
+];
+const ENCOURAGE = ['再接再厉,明天会更好!','就差一点点,下次一定中!','坚持就是胜利,加油!','今天的运气在攒着呢~','勇于尝试的你最棒!','小遗憾,也是大成长!','好运正在路上,别急~','你已经很努力啦!','下一份惊喜在等你!','保持微笑,幸运会来!','过程比结果更珍贵哦','稳住,我们能赢!'];
+let lastEncourage='';
+function tierOfName(name){ const p=(state.prizes||[]).find(pp=>pp.name===name); return tierKey(p||{name:name||''}); }
+function tierKey(p){
+  if(/龙珠/.test(p.name||'')) return 'longzhu';
+  const v=p.price;
+  if(typeof v!=='number') return null;
+  if(v>=0.1&&v<=0.4) return 'a';
+  if(v>=0.5&&v<=0.9) return 'b';
+  if(v>=1&&v<=1.5) return 'c';
+  if(Math.abs(v-2)<1e-9) return 'd';
+  if(Math.abs(v-2.5)<1e-9) return 'e';
+  if(Math.abs(v-3)<1e-9) return 'f';
+  return null;
+}
+function drawWeighted(){
+  if(Math.random() < 0.5) return null;
+  const total = TIERS.reduce((s,t)=>s+t.prob,0);
+  const r = Math.random()*total; let cum=0;
+  for(const t of TIERS){ cum+=t.prob; if(r<cum){ const m=(state.prizes||[]).filter(p=>tierKey(p)===t.key); if(m.length) return m[Math.floor(Math.random()*m.length)]; } }
+  return null;
+}
+function pickEncourage(){
+  let m;
+  do { m = ENCOURAGE[Math.floor(Math.random()*ENCOURAGE.length)]; } while(m===lastEncourage && ENCOURAGE.length>1);
+  lastEncourage = m; return m;
+}
+let viewDate = today();
+
+// ---------- 配置:奖励规则表 ----------
+const REWARD_ITEMS = [
+  {id:'r1', project:'学习', content:'数学超前学', amount:'每天2小节', reward:'每小节抽奖2次', note:'', type:'perDay', lotteryPer:2, max:4},
+  {id:'r2', project:'学习', content:'每日讲错题', amount:'计算4 + 应用题2', reward:'抽奖2次', type:'perDay', lotteryPer:2},
+  {id:'r3', project:'学习', content:'口算12分钟', amount:'每天1页(12分钟内100道且100%正确)', reward:'抽奖1次', type:'perDay', lotteryPer:1},
+  {id:'r4', project:'学习', content:'数学章节通关', amount:'每章完成后通关1次(90分以上)', reward:'通关奖励10次抽奖', type:'perChapter', lotteryPer:10, note:'不通关需讲错题直至通关'},
+  {id:'r5', project:'英语', content:'动画片', amount:'每天1小时', reward:'', type:'plain'},
+  {id:'r6', project:'英语', content:'磨耳朵', amount:'每天1小时以上', reward:'连续7天达1.5小时 → 奖励14次抽奖', type:'streak', streak:7, lottery:14},
+  {id:'r7', project:'英语', content:'伴鱼阅读课', amount:'每天4节', reward:'每节课抽奖1次', type:'perDay', lotteryPer:1, max:4},
+  {id:'r8', project:'语文', content:'阅读', amount:'每天2小时', reward:'每多阅读半小时奖励1次抽奖', type:'perDay', lotteryPer:1, note:'不含补之前未达标的情况'},
+  {id:'r9', project:'学习时段', content:'按时开始学习(早8/午2/晚7)', amount:'按时开始 + 每天多学半小时', reward:'连续7天按时 → 抽奖1次;每天多学半小时 → 抽奖1次', type:'streak', streak:7, lottery:1, extraPerDay:1, note:'上午完成除阅读外任务即算按时'},
+  {id:'r10', project:'作息', content:'7:30起床 / 22:30前睡', amount:'', reward:'连续7天达标 → 抽奖1次', type:'streak', streak:7, lottery:1},
+  {id:'r11', project:'电子产品', content:'电视20分 / 学习机2h娱乐(禁游戏)', amount:'任务完成后才能看', reward:'连续7天达标 → 抽奖1次', type:'streak', streak:7, lottery:1},
+  {id:'r12', project:'运动', content:'每天运动1小时以上', amount:'上午下午各0.5小时', reward:'连续7天达标 → 抽奖7次', type:'streak', streak:7, lottery:7},
+  {id:'r13', project:'家务', content:'即时清理书桌桌面、整理归档', amount:'家长每天抽查2次', reward:'连续7天达标 → 抽奖3次', type:'streak', streak:7, lottery:3},
+  {id:'r14', project:'家务', content:'主动完成一项家务(拖地/整理/扫/洗碗等)', amount:'每天至少一样', reward:'连续7天达标 → 抽奖3次', type:'streak', streak:7, lottery:3},
+  {id:'r15', project:'情绪管理', content:'情绪稳定、遇事好好沟通', amount:'', reward:'连续14天达标 → 抽奖2次', type:'streak', streak:14, lottery:2},
+  {id:'r16', project:'行为习惯', content:'及时关门/关灯/清理/提前准备物品', amount:'每天至少完成3项以上', reward:'连续21天达标 → 抽奖5次', type:'streak', streak:21, lottery:5},
+  {id:'r17', project:'奖励规划', content:'每日一半储蓄、一半自由消费', amount:'', reward:'储蓄金每达1000元 → 奖励50元储蓄金', type:'saving', lotteryPer:50, perAmount:1000},
+];
+
+// ---------- 配置:暑假每日时间规划表 ----------
+const SCHEDULE = [
+  {time:'上午 (7:30-12:00)', items:[
+    {id:'s1', text:'英语磨耳朵 30分钟以上'},
+    {id:'s2', text:'伴鱼阅读课 4节'},
+    {id:'s3', text:'数学超前学 2小节'},
+    {id:'s4', text:'英语动画片 1小时以上'},
+    {id:'s5', text:'运动 30分钟以上'},
+    {id:'s6', text:'上午任务完成后 → 自由活动'},
+  ]},
+  {time:'下午 (14:00-18:00)', items:[
+    {id:'s7', text:'每日讲错题(4计算+2应用)'},
+    {id:'s8', text:'运动 30分钟以上'},
+    {id:'s9', text:'上午完成后 → 自由活动'},
+    {id:'s10', text:'口算(寒假作业)'},
+    {id:'s11', text:'练字(寒假作业)'},
+    {id:'s12', text:'运动 30分钟以上'},
+    {id:'s13', text:'下午任务完成后 → 自由活动'},
+  ]},
+  {time:'晚上 (19:00-22:00)', items:[
+    {id:'s14', text:'阅读'},
+    {id:'s15', text:'22:10-22:30 洗漱'},
+    {id:'s16', text:'22:10-22:30 睡觉'},
+  ]},
+];
+
+// ---------- 配置:惩罚规则表(参考+记录用) ----------
+const PUNISH_ITEMS = [
+  {project:'学习', content:'延迟于规定时间8点开始学习', punishment:'以完成当天任务为目标,用自由时间补完,不牺牲睡觉'},
+  {project:'作息', content:'规定时间内当天任务没完成', punishment:'当天自由时间补完,没补完次日补完,不牺牲睡觉'},
+  {project:'作息', content:'晚于7:30起床 或 晚于22:30睡觉', punishment:'晚起当天补完;晚睡次日罚静站20分钟'},
+  {project:'电子产品', content:'学习任务未完成前玩', punishment:'只能任务完成后才能自由支配时间'},
+  {project:'电子产品', content:'超时', punishment:'当天减少相应自由时间弥补,不够次日补'},
+  {project:'电子产品', content:'未经允许偷玩', punishment:'发现1次 → 3天禁电视/学习机'},
+  {project:'电子产品', content:'家长提醒后仍继续玩', punishment:'发现1次 → 3天禁电视/学习机'},
+  {project:'电子产品', content:'下载或玩游戏', punishment:'发现1次 → 永禁娱乐视频'},
+  {project:'电子产品', content:'私自充值游戏等', punishment:'奖金100%抵扣 + 1月禁电子产品'},
+  {project:'情绪管理', content:'乱发脾气/摔砸/言语伤人', punishment:'月内1-2次:静站20/倒立10/洗碗1选1;3次以上取消1周福利'},
+  {project:'行为习惯', content:'不敲门/乱翻/拿物/不关灯等', punishment:'月内1-5次:静站20/倒立10/洗碗1选1;6次以上取消1周福利'},
+  {project:'电子产品', content:'22:30-7:30睡沙发/熬夜看视频', punishment:'发现1次 → 7天禁电视/学习机'},
+  {project:'餐桌', content:'不在餐桌上吃饭', punishment:'1次洗碗1次,一天2次以上洗碗3次'},
+];
+
+// ---------- 状态 ----------
+function defaultState(){ return { completions:{}, schedule:{}, punishments:[], lottery:{pool:0, history:[]}, streakAwarded:{}, draws:[], prizes: DEFAULT_PRIZES.map(p=>({...p})), dailyLimit: 0, totalDraws: 0, parentPIN: null, pinTries: 0, pinLocked: 0 }; }
+let state = load() || defaultState();
+if(Array.isArray(state.prizes) && state.prizes.some(p=>typeof p==='string')) state.prizes = DEFAULT_PRIZES.map(p=>({...p}));
+state.prizes = (state.prizes && state.prizes.length) ? state.prizes : DEFAULT_PRIZES.map(p=>({...p}));
+state.dailyLimit = state.dailyLimit || 0;
+state.totalDraws = state.totalDraws || 0;
+
+function load(){ try { return JSON.parse(localStorage.getItem(STORE)); } catch(e){ return null; } }
+// ---------- 家长PIN锁 ----------
+function pinLockedMsg(){
+  const left = Math.ceil((state.pinLocked-Date.now())/60000);
+  alert('PIN输入错误过多,请 '+left+' 分钟后重试');
+}
+function verifyPIN(callback){
+  if(!state.parentPIN){ callback(); return; }
+  if(state.pinLocked>Date.now()){ pinLockedMsg(); return; }
+  let entered='';
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  const box=document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:16px;padding:28px 24px;width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.2);position:relative';
+  const closeBtn=document.createElement('div');
+  closeBtn.textContent='✕';closeBtn.style.cssText='position:absolute;top:12px;right:14px;font-size:20px;color:#9aa5b1;cursor:pointer';
+  closeBtn.addEventListener('click',()=>overlay.remove());
+  const title=document.createElement('div');
+  title.textContent='🔐 请家长输入 PIN';title.style.cssText='font-size:18px;font-weight:700;margin-bottom:20px;padding-right:24px';
+  const dots=document.createElement('div');
+  dots.textContent='● ● ● ●';dots.style.cssText='font-size:32px;letter-spacing:12px;margin-bottom:24px;min-height:40px;color:#5b6ef5;font-weight:700';
+  const grid=document.createElement('div');
+  grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:10px';
+  const digits=[0,1,2,3,4,5,6,7,8,9];
+  for(let i=digits.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[digits[i],digits[j]]=[digits[j],digits[i]];}
+  const specials={CLR:{bg:'#f1f3f4',c:'#ef4444'},BKSP:{bg:'#f1f3f4',c:'#5b6ef5'}};
+  [...digits.slice(0,9).map(String),'CLR','BKSP'].forEach(k=>{
+    const b=document.createElement('button');
+    b.textContent=k;b.dataset.k=k;
+    const sp=specials[k];
+    b.style.cssText='height:56px;font-size:22px;border:none;border-radius:12px;background:'+(sp?sp.bg:'#f8f9fb')+';color:'+(sp?sp.c:'#333')+';font-weight:600;cursor:pointer';
+    b.addEventListener('click',e=>{ e.stopPropagation(); doKey(k); });
+    grid.appendChild(b);
+  });
+  const okBtn=document.createElement('button');
+  okBtn.textContent='确认';okBtn.dataset.k='OK';
+  okBtn.style.cssText='grid-column:1/4;height:56px;font-size:20px;border:none;border-radius:12px;background:#5b6ef5;color:#fff;font-weight:700;cursor:pointer';
+  okBtn.addEventListener('click',e=>{ e.stopPropagation(); doKey('OK'); });
+  grid.appendChild(okBtn);
+  box.appendChild(closeBtn);box.appendChild(title);box.appendChild(dots);box.appendChild(grid);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  function renderDots(){
+    let s='';
+    for(let i=0;i<4;i++) s += (i<entered.length ? '●' : '○') + ' ';
+    dots.textContent = s.trim();
+    dots.style.color = entered.length===4 ? '#22c55e' : '#5b6ef5';
+  }
+  function doKey(k){
+    if(k==='CLR'){ entered=''; }
+    else if(k==='BKSP'){ entered=entered.slice(0,-1); }
+    else if(k==='OK'){
+      if(entered===String(state.parentPIN)){ state.pinTries=0; save(); overlay.remove(); callback(); }
+      else { state.pinTries=(state.pinTries||0)+1; entered='';
+        if(state.pinTries>=3){ state.pinLocked=Date.now()+300000; state.pinTries=0; save(); overlay.remove(); alert('PIN错误3次，锁定5分钟'); }
+        else { save(); alert('PIN错误，剩余 '+(3-state.pinTries)+' 次机会'); } }
+    }
+    else if(entered.length<4){ entered+=k; }
+    renderDots();
+  }
+}
+// ---------- 保存/读取 ----------
+function save(){ try { localStorage.setItem(STORE, JSON.stringify(state)); } catch(e){ alert('保存失败:'+e.message); } }
+function today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function fmt(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function addDays(s,n){ const d=parseDate(s); d.setDate(d.getDate()+n); return fmt(d); }
+
+function getComp(date,id){ return (state.completions[date]||{})[id] || {done:false, sign:''}; }
+function setDone(date,id,done){
+  state.completions[date]=state.completions[date]||{};
+  const cur = state.completions[date][id] || {done:false, sign:''};
+  state.completions[date][id] = {done, sign:cur.sign};
+  save();
+  const item = REWARD_ITEMS.find(x=>x.id===id);
+  if(item && item.type==='streak') reconcileStreak(id, date);
+}
+function setSign(date,id,sign){
+  state.completions[date]=state.completions[date]||{};
+  const cur = state.completions[date][id] || {done:false, sign:''};
+  state.completions[date][id] = {done:cur.done, sign};
+  save();
+}
+function getSched(date,id){ return !!((state.schedule[date]||{})[id]); }
+function setSched(date,id,v){ state.schedule[date]=state.schedule[date]||{}; state.schedule[date][id]=v; save(); }
+
+function computeStreak(date,id){
+  let c=0; let d=parseDate(date);
+  while(true){
+    const ds=fmt(d);
+    if(getComp(ds,id).done){ c++; d.setDate(d.getDate()-1); } else break;
+  }
+  return c;
+}
+function reconcileStreak(id, date){
+  const item = REWARD_ITEMS.find(x=>x.id===id);
+  const streak = computeStreak(date,id);
+  const cycles = Math.floor(streak/item.streak);
+  const prev = state.streakAwarded[id]||0;
+  if(cycles>prev){
+    const add=(cycles-prev)*item.lottery;
+    addLottery(add, '【'+item.project+'】'+item.content+' 连续'+streak+'天达标 +'+add+'次');
+    state.streakAwarded[id]=cycles;
+  } else if(streak<item.streak){
+    state.streakAwarded[id]=0;
+  }
+  save();
+}
+function addLottery(n, reason){
+  n=Number(n)||0; if(n===0) return;
+  state.lottery.pool += n;
+  state.lottery.history.unshift({date:today(), reason, count:n});
+  save();
+}
+function adjustLottery(n){ addLottery(n, (n>0?'手动增加':'手动扣减')+' '+Math.abs(n)+'次'); }
+function doDraw(){
+  if((state.lottery.pool||0) <= 0){ alert('抽奖次数不足,先去完成打卡赚次数吧!'); return; }
+  if((state.totalDraws||0) >= 120){ alert('🎉 120次已抽完!\n请去「设置」重新设置奖品池和抽奖次数。'); return; }
+  const limit = state.dailyLimit||0;
+  const todayCount = (state.draws||[]).filter(d=>d.date===today()).length;
+  if(limit>0 && todayCount>=limit){ alert('今天抽奖已达上限('+limit+'次),明天再来吧!'); return; }
+  state.lottery.pool -= 1; save();
+  const pool = (state.prizes&&state.prizes.length) ? state.prizes : DEFAULT_PRIZES;
+  const modal=document.getElementById('drawModal');
+  const spin=document.getElementById('drawSpin');
+  const res=document.getElementById('drawResult');
+  const closeBtn=document.getElementById('drawClose');
+  res.classList.add('hidden'); closeBtn.classList.add('hidden'); spin.classList.remove('hidden');
+  modal.classList.remove('hidden');
+  let ticks=0;
+  const timer=setInterval(()=>{
+    spin.textContent = pool[Math.floor(Math.random()*pool.length)].name;
+    ticks++;
+    if(ticks>12){
+      clearInterval(timer);
+      const picked = drawWeighted();
+      let prize='', msg='';
+      if(picked){ prize=picked.name; } else { msg=pickEncourage(); }
+      spin.classList.add('hidden');
+      res.textContent = picked ? ('🎉 '+prize) : ('💪 '+msg);
+      res.classList.remove('hidden');
+      closeBtn.classList.remove('hidden');
+      state.draws=state.draws||[];
+      state.draws.unshift({date:today(), type: picked?'prize':'none', prize, msg});
+      state.totalDraws = (state.totalDraws||0)+1;
+      if(picked && tierKey(picked)==='longzhu'){
+        state.prizes = (state.prizes||[]).filter(p=>p.name!==picked.name);
+        alert('🌟 恭喜获得「'+picked.name+'」!\n每个龙珠只能中一次,该奖项已从奖池移除。');
+      }
+      save(); renderReward(); renderStat();
+      if(state.totalDraws>=120){ setTimeout(()=>{ alert('🎉 120次已抽完!\n请去「设置」重新设置奖品池和抽奖次数。'); }, 300); }
+      if(picked){ playWin(); confetti(); }
+    }
+  },80);
+}
+function playWin(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    const ac=new AC();
+    const notes=[523.25,659.25,783.99,1046.5];
+    notes.forEach((f,i)=>{
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type='triangle'; o.frequency.value=f;
+      o.connect(g); g.connect(ac.destination);
+      const t=ac.currentTime+i*0.09;
+      g.gain.setValueAtTime(0.001,t);
+      g.gain.exponentialRampToValueAtTime(0.3,t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0008,t+0.25);
+      o.start(t); o.stop(t+0.27);
+    });
+  }catch(e){}
+}
+function confetti(){
+  const colors=['#f87171','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6'];
+  for(let i=0;i<44;i++){
+    const p=document.createElement('div');
+    p.style.cssText='position:fixed;top:-12px;width:8px;height:13px;z-index:200;pointer-events:none;border-radius:2px;left:'+(Math.random()*100).toFixed(2)+'vw;background:'+colors[i%colors.length]+';';
+    document.body.appendChild(p);
+    const dur=1100+Math.random()*1300;
+    const dx=(Math.random()*220-110).toFixed(0);
+    const rot=(Math.random()*720).toFixed(0);
+    p.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:'translate('+dx+'px,105vh) rotate('+rot+'deg)',opacity:0.85}],{duration:dur,easing:'cubic-bezier(.3,.7,.4,1)'}).onfinish=()=>p.remove();
+  }
+}
+function clearTodayDraws(){
+  if(!(state.draws||[]).length){ alert('今天还没有抽奖记录'); return; }
+  if(!confirm('清空今天的抽奖记录吗?\n(抽奖池余额不变,已消耗的仍算已抽)')) return;
+  state.draws = (state.draws||[]).filter(d=>d.date!==today());
+  save(); renderReward(); renderStat(); alert('今日抽奖记录已清空');
+}
+
+// 抽奖弹窗关闭
+document.getElementById('drawClose').onclick=()=>document.getElementById('drawModal').classList.add('hidden');
+document.getElementById('drawModal').addEventListener('click', e=>{ if(e.target.id==='drawModal') document.getElementById('drawModal').classList.add('hidden'); });
+
+// ---------- 渲染:奖励打卡 ----------
+function renderReward(){
+  const groups = {};
+  REWARD_ITEMS.forEach(it=>{ (groups[it.project]=groups[it.project]||[]).push(it); });
+  let h = '';
+  const todayDrawn = (state.draws||[]).filter(d=>d.date===today()).length;
+  const totalD = state.totalDraws||0;
+  const remainD = Math.max(0, 120-totalD);
+  h += '<div class="lottery-box"><div class="num">🎰 '+state.lottery.pool+'</div><div class="lbl">剩余 <b>'+remainD+'</b> / 120 次(累计已抽 '+totalD+')</div>'
+    + '<button class="drawbtn" id="drawBtn">🎰 抽奖(点一下消耗1次)</button>'
+    + '<div class="lbl" style="margin-top:8px">今日已抽:<b>'+todayDrawn+'</b> 次 · <span id="clearToday" style="text-decoration:underline;cursor:pointer">清空今日</span></div></div>';
+  Object.keys(groups).forEach(p=>{
+    h += '<div class="card"><div class="group-title">'+p+'</div>';
+    groups[p].forEach(it=>{
+      const c = getComp(viewDate, it.id);
+      const streak = it.type==='streak' ? computeStreak(viewDate, it.id) : 0;
+      const badge = it.type==='streak'
+        ? (streak>=it.streak
+            ? '<span class="streak-badge streak-on">🔥 连续'+streak+'天(已达标)</span>'
+            : '<span class="streak-badge streak-off">连续 '+streak+' / '+it.streak+' 天</span>')
+        : '';
+      let addBtn='';
+      if(it.type==='perDay') addBtn='<button class="addbtn" data-add="'+it.id+'">+'+it.lotteryPer+'次抽奖</button>';
+      if(it.type==='perChapter') addBtn='<button class="addbtn" data-add="'+it.id+'">+'+it.lotteryPer+'次(章节通关)</button>';
+      if(it.type==='saving') addBtn='<button class="addbtn" data-add="'+it.id+'">储蓄每满'+it.perAmount+'元 +'+it.lotteryPer+'元</button>';
+      if(it.type==='streak' && it.extraPerDay) addBtn='<button class="addbtn" data-add="'+it.id+'" data-extra="1">+'+it.extraPerDay+'次(多学半小时)</button>';
+      if(it.type==='perDay' || it.type==='perChapter' || (it.type==='streak' && it.extraPerDay)){
+        const ok = c.done && (c.sign||'').trim();
+        const reason = !c.done ? '请先完成该项目并家长签字后再领取' : '请先让家长签字后再领取';
+        if(!ok) addBtn='<button class="addbtn" style="opacity:0.4;cursor:not-allowed" title="'+reason+'">+'+it.lotteryPer+'次抽奖</button>';
+      }
+      h += '<div class="item">'
+        + '<label class="chk"><input type="checkbox" data-chk="'+it.id+'" '+(c.done?'checked':'')+'></label>'
+        + '<div class="body">'
+        + '<div class="ct">'+it.content+'</div>'
+        + (it.amount?'<div class="meta">📌 '+it.amount+'</div>':'')
+        + (it.reward?'<div class="reward">🎁 '+it.reward+'</div>':'')
+        + (it.note?'<div class="note">备注:'+it.note+'</div>':'')
+        + badge
+        + addBtn
+        + '<div class="sign">🔒 家长签字：<input type="text" data-sign="'+it.id+'" placeholder="请家长来签字" value="'+esc(c.sign)+'"></div>'
+        + '</div></div>';
+    });
+    h += '</div>';
+  });
+  document.getElementById('tab-reward').innerHTML = h;
+  const db=document.getElementById('drawBtn'); if(db) db.onclick=doDraw;
+  const ct=document.getElementById('clearToday'); if(ct) ct.onclick=clearTodayDraws;
+}
+
+// ---------- 渲染:时间规划 ----------
+function renderPlan(){
+  let h='';
+  SCHEDULE.forEach(g=>{
+    h += '<div class="card"><div class="group-title">'+g.time+'</div>';
+    g.items.forEach(it=>{
+      const done = getSched(viewDate, it.id);
+      h += '<div class="item"><label class="chk"><input type="checkbox" data-schk="'+it.id+'" '+(done?'checked':'')+'></label>'
+        + '<div class="body"><div class="ct">'+it.text+'</div></div></div>';
+    });
+    h += '</div>';
+  });
+  document.getElementById('tab-plan').innerHTML = h;
+}
+
+// ---------- 渲染:惩罚记录 ----------
+function renderPunish(){
+  let h = '<div class="card">'
+    + '<div class="group-title">添加惩罚记录</div>'
+    + '<input type="date" id="pDate" value="'+viewDate+'">'
+    + '<select id="pContent"></select>'
+    + '<select id="pPunish"></select>'
+    + '<input type="text" id="pNote" placeholder="备注(可选)">'
+    + '<button class="btn" id="pAdd">添加记录</button></div>';
+  // 参考规则
+  h += '<div class="card"><div class="group-title">惩罚规则速查</div>';
+  PUNISH_ITEMS.forEach((p,i)=>{
+    h += '<div class="item" style="border-top:1px dashed #eceef1"><div class="body">'
+      + '<div class="ct" style="font-size:13.5px">['+p.project+'] '+p.content+'</div>'
+      + '<div class="pn" style="font-size:12.5px">→ '+p.punishment+'</div>'
+      + '</div></div>';
+  });
+  h += '</div>';
+  // 记录列表
+  h += '<div class="group-title" style="margin:6px 4px">📑 已记录('+state.punishments.length+')</div>';
+  if(state.punishments.length===0) h += '<div class="hint">暂无记录</div>';
+  state.punishments.slice().reverse().forEach(r=>{
+    h += '<div class="log-item"><div class="t">'+r.date+'</div>'
+      + '<div class="p">['+r.project+'] '+r.content+'</div>'
+      + '<div class="pn">→ '+r.punishment+(r.note?'('+r.note+')':'')+'</div></div>';
+  });
+  document.getElementById('tab-punish').innerHTML = h;
+  // 填充下拉
+  const selC = document.getElementById('pContent');
+  const selP = document.getElementById('pPunish');
+  PUNISH_ITEMS.forEach((p,i)=>{ selC.add(new Option('['+p.project+'] '+p.content, i)); });
+  PUNISH_ITEMS.forEach((p,i)=>{ selP.add(new Option(p.punishment, i)); });
+  selC.onchange = ()=>{ selP.value = selC.value; };
+  document.getElementById('pAdd').onclick = ()=>{
+    const idx = selC.value; const p = PUNISH_ITEMS[idx];
+    state.punishments.push({date:document.getElementById('pDate').value, project:p.project, content:p.content, punishment:p.punishment, note:document.getElementById('pNote').value});
+    save(); renderPunish();
+  };
+}
+
+// ---------- 渲染:统计 ----------
+function renderStat(){
+  let h = '<div class="lottery-box"><div class="num">🎰 '+state.lottery.pool+'</div><div class="lbl">累计抽奖次数</div></div>';
+  // 连续天数进度
+  h += '<div class="card"><div class="group-title">连续达标进度</div>';
+  REWARD_ITEMS.filter(it=>it.type==='streak').forEach(it=>{
+    const s = computeStreak(today(), it.id);
+    const pct = Math.min(100, Math.round(s/it.streak*100));
+    h += '<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>'+it.project+'·'+it.content+'</span><span>'+s+'/'+it.streak+'天</span></div>'
+      + '<div style="background:#eef2f7;height:8px;border-radius:5px;margin-top:3px"><div style="width:'+pct+'%;background:#5b6ef5;height:8px;border-radius:5px"></div></div></div>';
+  });
+  h += '</div>';
+  // 今日完成率
+  const total = REWARD_ITEMS.length;
+  const done = REWARD_ITEMS.filter(it=>getComp(today(),it.id).done).length;
+  h += '<div class="card"><div class="group-title">今日概览('+today()+')</div>';
+  h += '<div class="stat-line"><span>奖励项完成</span><span>'+done+' / '+total+'</span></div>';
+  const stotal = SCHEDULE.reduce((a,g)=>a+g.items.length,0);
+  const sdone = SCHEDULE.reduce((a,g)=>a+g.items.filter(it=>getSched(today(),it.id)).length,0);
+  h += '<div class="stat-line"><span>时间规划完成</span><span>'+sdone+' / '+stotal+'</span></div>';
+  h += '<div class="stat-line"><span>惩罚记录数</span><span>'+state.punishments.length+'</span></div>';
+  h += '</div>';
+  // 抽奖明细
+  h += '<div class="card"><div class="group-title">抽奖明细</div>';
+  if(state.lottery.history.length===0) h += '<div class="hint">暂无</div>';
+  state.lottery.history.slice(0,40).forEach(x=>{
+    h += '<div class="hist"><span style="float:right;font-weight:700;color:#c2410c">+'+(x.count>0?'':'')+x.count+'</span>'+x.date+' '+x.reason+'</div>';
+  });
+  h += '</div>';
+  // 抽奖统计
+  const drawsAll = state.draws||[];
+  const isNone = d => (d.type==='none') || (d.prize==='谢谢参与');
+  const todayD = drawsAll.filter(d=>d.date===today());
+  const prizeD = todayD.filter(d=>!isNone(d));
+  const noneD = todayD.filter(isNone);
+  const prizeAll = drawsAll.filter(d=>!isNone(d));
+  const noneAll = drawsAll.filter(isNone);
+  const sumAmt = arr=> arr.reduce((s,d)=>{ if(d.type==='prize'){ const p=(state.prizes||[]).find(pp=>pp.name===d.prize); return s+(p&&p.price||0); } return s; },0);
+  const amtT=sumAmt(todayD), amtA=sumAmt(drawsAll);
+  h += '<div class="card"><div class="group-title">🎁 抽奖统计</div>';
+  // 今日 + 累计 各档明细
+  const tierRow = (tier, cntT, amtT, cntA, amtA) => {
+    const hasT = cntT>0 || amtT>0;
+    const hasA = cntA>0 || amtA>0;
+    if(!hasT && !hasA) return '';
+    const amtStrT = amtT>0 ? '<span style="color:#b45309"> ¥'+amtT.toFixed(2)+'</span>' : '';
+    const amtStrA = amtA>0 ? '<span style="color:#b45309"> ¥'+amtA.toFixed(2)+'</span>' : '';
+    return '<div style="display:flex;align-items:center;font-size:12.5px;padding:4px 0;border-bottom:1px solid #f1f3f4">'
+      + '<div style="flex:1.8">'+tier.label+'</div>'
+      + '<div style="flex:1;text-align:center">'+(hasT?('<b>'+cntT+'</b>'+amtStrT):'<span style="color:#d1d5db">-</span>')+'</div>'
+      + '<div style="flex:1;text-align:center">'+(hasA?('<b>'+cntA+'</b>'+amtStrA):'<span style="color:#d1d5db">-</span>')+'</div>'
+      + '</div>';
+  };
+  h += '<div style="display:flex;font-size:12px;color:#9aa5b1;padding:0 0 4px;border-bottom:1px solid #e4e7eb">'
+    + '<div style="flex:1.8">档位</div><div style="flex:1;text-align:center">今日</div><div style="flex:1;text-align:center">累计</div></div>';
+  TIERS.forEach(t=>{
+    const ct=prizeD.filter(d=>tierOfName(d.prize)===t.key).length;
+    const ca=prizeAll.filter(d=>tierOfName(d.prize)===t.key).length;
+    const at=prizeD.filter(d=>tierOfName(d.prize)===t.key).reduce((s,d)=>{ const p=(state.prizes||[]).find(pp=>pp.name===d.prize); return s+(p&&p.price||0); },0);
+    const aa=prizeAll.filter(d=>tierOfName(d.prize)===t.key).reduce((s,d)=>{ const p=(state.prizes||[]).find(pp=>pp.name===d.prize); return s+(p&&p.price||0); },0);
+    h += tierRow(t, ct, at, ca, aa);
+  });
+  // 龙珠单独一行
+  const lzT = prizeD.filter(d=>tierOfName(d.prize)==='longzhu').length;
+  const lzA = prizeAll.filter(d=>tierOfName(d.prize)==='longzhu').length;
+  h += tierRow({label:'🌟 龙珠'}, lzT, 0, lzA, 0);
+  // 合计行
+  const hasAnyT = prizeD.length>0 || amtT>0;
+  const hasAnyA = prizeAll.length>0 || amtA>0;
+  h += '<div style="display:flex;font-size:13px;font-weight:700;padding:6px 0 2px;color:#1f2933;border-top:2px solid #e4e7eb;margin-top:2px">'
+    + '<div style="flex:1.8">合计</div>'
+    + '<div style="flex:1;text-align:center;color:'+(hasAnyT?'#16a34a':'#d1d5db')+'">'+(hasAnyT?(prizeD.length+'次'+(amtT>0?(' ¥'+amtT.toFixed(2)):'')):'-')+'</div>'
+    + '<div style="flex:1;text-align:center;color:'+(hasAnyA?'#16a34a':'#d1d5db')+'">'+(hasAnyA?(prizeAll.length+'次'+(amtA>0?(' ¥'+amtA.toFixed(2)):'')):'-')+'</div>'
+    + '</div>';
+  h += '</div>';
+  // 最近抽奖
+  h += '<div class="card"><div class="group-title">🎁 最近抽奖</div>';
+  if(!drawsAll.length) h += '<div class="hint">还没有抽过奖</div>';
+  drawsAll.slice(0,30).forEach(x=>{ const isN=isNone(x); const txt=isN?('💪 '+(x.msg||'谢谢参与')):('🎉 '+x.prize); const col=isN?'#9aa5b1':'#c2410c'; h += '<div class="hist"><span style="float:right;color:'+col+';font-weight:700">'+txt+'</span>'+x.date+'</div>'; });
+  h += '</div>';
+  // 设置
+  h += '<div class="card"><div class="group-title">⚙️ 设置</div>';
+  h += '<div style="font-size:13px;color:#52606d;margin-bottom:4px">累计已抽:<b>'+(state.totalDraws||0)+'</b> / 120 次(抽完请重新设置)</div>';
+  h += '<div style="font-size:13px;color:#52606d;margin-bottom:4px">每日抽奖上限(0 = 不限制)</div>';
+  h += '<div class="row"><input type="number" id="limN" value="'+state.dailyLimit+'" style="margin-bottom:0"><button class="btn sec" id="limSave">保存</button></div>';
+  h += '<div style="height:10px"></div>';
+  h += '<div style="font-size:12.5px;color:#9aa5b1;margin-bottom:6px">🎯 中奖权重:龙珠6% · 0.1-0.4元20% · 0.5-0.9元15% · 1-1.5元10% · 2元8% · 2.5元7% · 3元7%(其余≈27%为"谢谢参与")</div>';
+  h += '<div style="font-size:13px;color:#52606d;margin-bottom:4px">奖品池(每行一个,格式:名称|价格;龙珠类名称含"龙珠"即可)</div>';
+  h += '<textarea id="prizeList" rows="9" style="width:100%;border:1px solid #d9dee4;border-radius:8px;padding:8px;font-size:13px">'+esc(state.prizes.map(p=> p.price!=null ? p.name+'|'+p.price : p.name).join('\n'))+'</textarea>';
+  h += '<div style="height:8px"></div><button class="btn sec" id="prizeSave">保存奖品池</button>';
+  h += '<div style="height:10px"></div><div class="group-title" style="font-size:14px">🔐 家长PIN锁</div>';
+  h += '<div style="font-size:12.5px;color:#9aa5b1;margin-bottom:6px">'+(state.parentPIN?'✅ 已启用（签字/重置需家长PIN）':'❌ 未启用（任何人可直接签字）')+'</div>';
+  h += '<div style="font-size:12.5px;color:#9aa5b1;margin-bottom:4px">新PIN（留空=不变，填0=关闭PIN锁）</div>';
+  h += '<div class="row"><input type="password" id="newPIN" placeholder="4位数字，如 1234" style="margin-bottom:0;ime-mode:disabled;-webkit-text-security:disc" maxlength="4"><button class="btn sec" id="pinSave">保存</button></div>';
+  h += '<div style="height:6px"></div><button class="btn sec" id="resetDraws" style="background:#fef3c7;color:#92400e">🔄 重置抽奖次数(归零重新120抽)</button></div>';
+  h += '<div style="height:6px"></div><button class="btn sec" id="unlockNow" style="background:#fee2e2;color:#b91c1c">🔓 强制解除PIN锁定(只需点一次)</button></div>';
+  // 手动调整 + 导出导入
+  h += '<div class="card"><div class="group-title">数据管理</div>';
+  h += '<div class="row"><input type="number" id="adjN" placeholder="次数" style="margin-bottom:0"><button class="btn sec" id="adjAdd">+加</button></div>';
+  h += '<div style="height:8px"></div><div class="row"><button class="btn sec" id="btnExport">⬇ 导出备份</button><button class="btn sec" id="btnImport">⬆ 导入恢复</button></div>';
+  h += '<input type="file" id="fileInput" accept="application/json" class="hidden"></div>';
+  h += '<div class="hint">数据仅存本机浏览器。换手机/电脑请用「导出备份」存JSON,再到新设备「导入恢复」。</div>';
+  document.getElementById('tab-stat').innerHTML = h;
+  document.getElementById('adjAdd').onclick = ()=>{ const n=Number(document.getElementById('adjN').value)||0; if(n) { adjustLottery(n); renderStat(); renderReward(); } };
+  document.getElementById('btnExport').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(state)], {type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='奖惩打卡备份_'+today()+'.json'; a.click();
+  };
+  document.getElementById('btnImport').onclick = ()=> document.getElementById('fileInput').click();
+  document.getElementById('fileInput').onchange = (e)=>{
+    const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
+    rd.onload=()=>{ try{ state=JSON.parse(rd.result); save(); renderAll(); alert('恢复成功'); }catch(err){ alert('文件无效'); } };
+    rd.readAsText(f);
+  };
+  document.getElementById('limSave').onclick=()=>{ state.dailyLimit=Math.max(0,Number(document.getElementById('limN').value)||0); save(); alert('已保存:每日上限 '+state.dailyLimit+(state.dailyLimit?' 次':'(不限制)')); };
+  document.getElementById('prizeSave').onclick=()=>{ const arr=document.getElementById('prizeList').value.split('\n').map(s=>s.trim()).filter(Boolean).map(line=>{ const i=line.indexOf('|'); if(i>=0){ const nm=line.slice(0,i).trim(); const pr=parseFloat(line.slice(i+1)); return {name:nm, price:isNaN(pr)?null:pr}; } return {name:line}; }); if(!arr.length){ alert('至少填一个奖品'); return; } state.prizes=arr; save(); renderReward(); renderStat(); alert('奖品池已保存('+arr.length+' 项)'); };
+  document.getElementById('pinSave').onclick=()=>{ const v=document.getElementById('newPIN').value; if(v==='0'){ state.parentPIN=null; state.pinTries=0; state.pinLocked=0; save(); alert('PIN锁已关闭'); renderStat(); return; } if(v.length>0 && v.length!==4){ alert('PIN必须是4位数字'); return; } if(v.length===4){ state.parentPIN=Number(v); state.pinTries=0; state.pinLocked=0; save(); alert('PIN已保存为 '+v); renderStat(); return; } alert('请输入4位数字，或填0关闭PIN锁'); };
+  document.getElementById('resetDraws').onclick=()=>{ if(state.parentPIN){ verifyPIN(()=>{ if(!confirm('确定重置抽奖次数(累计归零,清空所有抽奖记录)?\n奖品池余额不变。')) return; state.totalDraws=0; state.draws=[]; save(); renderReward(); renderStat(); alert('已重置，可以重新开始120次抽奖啦!'); }); } else { if(!confirm('确定重置抽奖次数(累计归零,清空所有抽奖记录)?\n奖品池余额不变。')) return; state.totalDraws=0; state.draws=[]; save(); renderReward(); renderStat(); alert('已重置，可以重新开始120次抽奖啦!'); } };
+  document.getElementById('unlockNow').onclick=()=>{ if(!confirm('强制解除PIN锁定?(仅清锁定计时,不清PIN本身)')) return; state.pinLocked=0; state.pinTries=0; save(); alert('🔓 已强制解除锁定,现在可以重新输入 PIN'); };
+}
+
+function esc(s){ return (s||'').replace(/"/g,'&quot;'); }
+
+// ---------- 切换标签 ----------
+function showTab(name){
+  ['reward','plan','punish','stat'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('hidden', t!==name);
+    document.querySelector('.tabs button[data-tab="'+t+'"]').classList.toggle('active', t===name);
+  });
+  if(name==='reward') renderReward();
+  if(name==='plan') renderPlan();
+  if(name==='punish') renderPunish();
+  if(name==='stat') renderStat();
+}
+
+function renderAll(){
+  document.getElementById('curDate').textContent = viewDate;
+  renderReward();
+}
+
+// 事件委托
+document.addEventListener('change', e=>{
+  const t=e.target;
+  if(t.dataset.chk){ setDone(viewDate, t.dataset.chk, t.checked); if(!document.getElementById('tab-reward').classList.contains('hidden')) renderReward(); }
+  if(t.dataset.schk){ setSched(viewDate, t.dataset.schk, t.checked); }
+  if(t.dataset.sign){ setSign(viewDate, t.dataset.sign, t.value); }
+});
+document.getElementById('tab-reward').addEventListener('click', e=>{
+  const b=e.target.closest('[data-add]');
+  if(!b) return;
+  const it=REWARD_ITEMS.find(x=>x.id===b.dataset.add);
+  const c=getComp(viewDate,it.id);
+  if(!c.done){ alert('请先完成该项目'); return; }
+  if(!(c.sign||'').trim() && !state.parentPIN){ alert('请先让家长在下方签字'); return; }
+  verifyPIN(()=>{
+    if(it.type==='saving'){ const amt=prompt('当前储蓄金总额(元)?',''); if(amt!==null){ const cycles=Math.floor(Number(amt)/it.perAmount); addLottery(cycles*it.lotteryPer, '储蓄金达'+amt+'元 +'+(cycles*it.lotteryPer)+'元'); renderReward(); renderStat(); } }
+    else { addLottery(it.lotteryPer + (b.dataset.extra?Number(b.dataset.extra):0), '【'+it.project+'】'+it.content+' 手动 +'+(it.lotteryPer+(b.dataset.extra?Number(b.dataset.extra):0))+'次'); renderReward(); renderStat(); }
+  });
+});
+document.querySelectorAll('.tabs button').forEach(b=> b.onclick=()=>showTab(b.dataset.tab));
+document.getElementById('prev').onclick = ()=>{ viewDate=addDays(viewDate,-1); renderAll(); };
+document.getElementById('next').onclick = ()=>{ viewDate=addDays(viewDate,1); renderAll(); };
+
+renderAll();
+</script>
+</body>
+</html>
+
