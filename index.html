@@ -626,8 +626,17 @@ function renderStat(){
   document.getElementById('tab-stat').innerHTML = h;
   document.getElementById('adjAdd').onclick = ()=>{ const n=Number(document.getElementById('adjN').value)||0; if(n) { adjustLottery(n); renderStat(); renderReward(); } };
   document.getElementById('btnExport').onclick = ()=>{
-    const blob = new Blob([JSON.stringify(state)], {type:'application/json'});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='奖惩打卡备份_'+today()+'.json'; a.click();
+    const json = JSON.stringify(state, null, 2);
+    const ta = document.createElement('textarea');
+    ta.value = json;
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;background:#fff;font-size:12px;font-family:monospace;padding:10px;border:none;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    const hint = document.createElement('div');
+    hint.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);color:#fff;text-align:center;padding:12px;font-size:14px;z-index:100000;pointer-events:none;';
+    hint.textContent = '✅ 已全选！点「复制」按钮（或三指长按），然后去微信粘贴发给自己';
+    document.body.appendChild(hint);
+    setTimeout(()=>{ document.body.removeChild(ta); document.body.removeChild(hint); }, 15000);
   };
   document.getElementById('btnImport').onclick = ()=> document.getElementById('fileInput').click();
   document.getElementById('fileInput').onchange = (e)=>{
