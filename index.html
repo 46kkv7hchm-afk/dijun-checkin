@@ -933,37 +933,57 @@ renderAll();
 
 
 // ---------- 云同步 ----------
-var GIST_API = 'https://api.github.com/gists';
+var GIST_API = 'https://gitee.com/api/v5/repos';
 var GIST_FN = 'dijun_checkin_backup.json';
 var CLOUD_KEY = 'dijun_cloud_v1';
+
+function b64encode(str){
+  try{ return btoa(unescape(encodeURIComponent(str))); }catch(e){ return btoa(str); }
+}
+function b64decode(str){
+  try{ return decodeURIComponent(escape(atob(str))); }catch(e){ return atob(str); }
+}
+function giteeFileUrl(cfg){
+  return GIST_API+'/'+cfg.owner+'/'+cfg.repo+'/contents/'+GIST_FN;
+}
 
 function cloudGetConfig(){
   try{ return JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}'); } catch(e){ return {}; }
 }
+
 function cloudSaveConfig(cfg){ localStorage.setItem(CLOUD_KEY, JSON.stringify(cfg)); }
 
 function openCloudModal(){
   var modal = document.getElementById('cloudModal');
+  if(!modal) return;
   var cfg = cloudGetConfig();
   document.getElementById('cloudToken').value = cfg.token||'';
-  document.getElementById('cloudGistId').value = cfg.gistId||'';
+  var oEl = document.getElementById('cloudOwner');
+  var rEl = document.getElementById('cloudRepo');
+  if(oEl) oEl.value = cfg.owner||'';
+  if(rEl) rEl.value = cfg.repo||'';
   document.getElementById('cloudAutoSync').checked = !!cfg.autoSync;
   var linkEl = document.getElementById('cloudGistLink');
   var statusEl = document.getElementById('cloudStatus');
-  statusEl.style.display = 'none';
-  if(cfg.gistId){
-    linkEl.innerHTML = '<a href="https://gist.github.com/'+cfg.gistId+'" target="_blank">📎 查看 Gist</a>';
-    linkEl.style.display = 'block';
-  } else {
-    linkEl.style.display = 'none';
+  if(statusEl) statusEl.style.display = 'none';
+  if(linkEl){
+    if(cfg.owner && cfg.repo){
+      linkEl.innerHTML = '<a href="https://gitee.com/'+cfg.owner+'/'+cfg.repo+'" target="_blank">📎 查看仓库</a>';
+      linkEl.style.display = 'block';
+    } else {
+      linkEl.style.display = 'none';
+    }
   }
   modal.classList.remove('hidden');
 }
+
 function closeCloudModal(){
-  document.getElementById('cloudModal').classList.add('hidden');
+  var m = document.getElementById('cloudModal');
+  if(m) m.classList.add('hidden');
 }
+
 document.getElementById('cloudModal').addEventListener('click', function(e){
-  if(e.target.id==='cloudModal') closeCloudModal();
+  if(e.target && e.target.id === 'cloudModal') closeCloudModal();
 });
 
 function cloudSetStatus(msg, type){
@@ -982,8 +1002,6 @@ function cloudMergeState(remoteStr){
   try {
     var remote = JSON.parse(remoteStr);
     if(!remote || !remote.state) throw new Error('格式错误');
-    // For arrays (punishments, draws) and objects (completions, schedule, savings):
-    // Remote wins (cloud is source of truth for merge)
     var keys = ['completions','schedule','punishments','draws','lottery','savings','streakAwarded','prizes','dailyLimit','totalDraws','parentPIN'];
     for(var i=0;i<keys.length;i++){
       var k = keys[i];
@@ -1000,113 +1018,82 @@ function cloudMergeState(remoteStr){
 
 function cloudUpload(cb){
   var cfg = cloudGetConfig();
-  if(!cfg.token){ cloudSetStatus('请先填写 GitHub Token 并保存', 'err'); return; }
+  if(!cfg.token || !cfg.owner || !cfg.repo){ cloudSetStatus('请先填写令牌、用户名、仓库名并保存', 'err'); return; }
   var body = cloudBuildPayload();
-  var gistId = cfg.gistId;
-  var method = gistId ? 'PATCH' : 'POST';
-  var url = gistId ? GIST_API+'/'+gistId : GIST_API;
+  var content = b64encode(body);
   cloudSetStatus('正在上传...', 'info');
-  document.getElementById('cloudUpload').disabled = true;
-  document.getElementById('cloudFab').classList.add('syncing');
-  fetch(url, {
-    method: method,
-    headers: {
-      'Authorization': 'Bearer '+cfg.token,
-      'Accept': 'application/vnd.github+json',
-      'Content-Type': 'application/json'
-    },
-    body: (function(){ var filesObj={}; filesObj[GIST_FN]={content:body}; return JSON.stringify({description:'帝君打卡数据备份', public:false, files: filesObj}); })()
-  }).then(function(r){ return r.json(); })
+  var upBtn = document.getElementById('cloudUpload');
+  var fab = document.getElementById('cloudFab');
+  if(upBtn) upBtn.disabled = true;
+  if(fab) fab.classList.add('syncing');
+  fetch(giteeFileUrl(cfg)+'?access_token='+encodeURIComponent(cfg.token), {method:'GET'})
+    .then(function(r){ if(r.status===404) return null; return r.json(); })
+    .then(function(exist){
+      var payload = { access_token: cfg.token, content: content, message: '打卡数据更新 '+new Date().toLocaleString('zh-CN') };
+      var method = 'POST';
+      if(exist && exist.sha){ method = 'PUT'; payload.sha = exist.sha; }
+      return fetch(giteeFileUrl(cfg), { method: method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    })
+    .then(function(r){ return r.json(); })
     .then(function(data){
-      if(data.id){
-        if(!gistId){
-          cfg.gistId = data.id;
-          cloudSaveConfig(cfg);
-          document.getElementById('cloudGistId').value = data.id;
-        }
+      if(data && data.content){
         cloudSetStatus('✅ 上传成功！'+new Date().toLocaleString('zh-CN'), 'ok');
         var linkEl = document.getElementById('cloudGistLink');
-        linkEl.innerHTML = '<a href="'+data.html_url+'" target="_blank">📎 查看 Gist</a>';
-        linkEl.style.display = 'block';
-        // Also update cloud tab if visible
-        var tabInput = document.getElementById('cloudGistId');
-        if(tabInput) tabInput.value = data.id;
+        if(linkEl){
+          linkEl.innerHTML = '<a href="https://gitee.com/'+cfg.owner+'/'+cfg.repo+'/blob/master/'+GIST_FN+'" target="_blank">📎 查看文件</a>';
+          linkEl.style.display = 'block';
+        }
         if(cb) cb(true);
+      } else if(data && data.message){
+        cloudSetStatus('❌ 上传失败：'+data.message, 'err');
+        if(cb) cb(false);
       } else {
-        cloudSetStatus('❌ 失败：'+(data.message||'未知错误'), 'err');
+        cloudSetStatus('❌ 上传失败', 'err');
         if(cb) cb(false);
       }
     })
     .catch(function(e){
-      cloudSetStatus('❌ 网络错误：'+e.message, 'err');
+      cloudSetStatus('❌ 错误：'+(e.message||e), 'err');
+      console.error('upload err', e);
       if(cb) cb(false);
     })
     .finally(function(){
-      document.getElementById('cloudUpload').disabled = false;
-      document.getElementById('cloudFab').classList.remove('syncing');
+      if(upBtn) upBtn.disabled = false;
+      if(fab) fab.classList.remove('syncing');
     });
 }
 
 function cloudDownload(){
   var cfg = cloudGetConfig();
-  if(!cfg.token){ cloudSetStatus('请先填写 Token 并保存', 'err'); return; }
-  if(!cfg.gistId){ cloudSetStatus('请先上传一次创建云端仓库', 'err'); return; }
+  if(!cfg.token || !cfg.owner || !cfg.repo){ cloudSetStatus('请先填写令牌、用户名、仓库名并保存', 'err'); return; }
   cloudSetStatus('正在下载...', 'info');
-  document.getElementById('cloudDownload').disabled = true;
-  document.getElementById('cloudFab').classList.add('syncing');
-  fetch(GIST_API+'/'+cfg.gistId, {
-    headers: {
-      'Authorization': 'Bearer '+cfg.token,
-      'Accept': 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28'
-    }
-  }).then(function(r){ return r.json(); })
+  var dlBtn = document.getElementById('cloudDownload');
+  var fab = document.getElementById('cloudFab');
+  if(dlBtn) dlBtn.disabled = true;
+  if(fab) fab.classList.add('syncing');
+  fetch(giteeFileUrl(cfg)+'?access_token='+encodeURIComponent(cfg.token), {method:'GET'})
+    .then(function(r){
+      if(r.status===404){ cloudSetStatus('云端还没有数据，请先上传一次', 'err'); return null; }
+      return r.json();
+    })
     .then(function(data){
-      if(data.files && data.files[GIST_FN]){
-        cloudMergeState(data.files[GIST_FN].content);
-        cloudSetStatus('✅ 下载成功，数据已合并！'+new Date().toLocaleString('zh-CN'), 'ok');
+      if(data && data.content){
+        cloudMergeState(b64decode(data.content));
+        cloudSetStatus('✅ 下载成功！'+new Date().toLocaleString('zh-CN'), 'ok');
         renderAll();
-      } else {
-        cloudSetStatus('❌ 未找到备份文件', 'err');
+      } else if(data && data.message){
+        cloudSetStatus('❌ 下载失败：'+data.message, 'err');
       }
     })
     .catch(function(e){
-      cloudSetStatus('❌ 网络错误：'+e.message, 'err');
+      cloudSetStatus('❌ 错误：'+(e.message||e), 'err');
     })
     .finally(function(){
-      document.getElementById('cloudDownload').disabled = false;
-      document.getElementById('cloudFab').classList.remove('syncing');
+      if(dlBtn) dlBtn.disabled = false;
+      if(fab) fab.classList.remove('syncing');
     });
 }
 
-document.getElementById('cloudSave').onclick = function(){
-  var token = document.getElementById('cloudToken').value.trim();
-  var gistId = document.getElementById('cloudGistId').value.trim();
-  var autoSync = document.getElementById('cloudAutoSync').checked;
-  if(!token){ cloudSetStatus('Token 不能为空', 'err'); return; }
-  cloudSaveConfig({token:token, gistId:gistId, autoSync:autoSync});
-  cloudSetStatus('✅ 设置已保存！', 'ok');
-  if(gistId){
-    var linkEl = document.getElementById('cloudGistLink');
-    linkEl.innerHTML = '<a href="https://gist.github.com/'+gistId+'" target="_blank">📎 查看 Gist</a>';
-    linkEl.style.display = 'block';
-  }
-};
-
-document.getElementById('cloudClear').onclick = function(){
-  if(!confirm('确定清除云同步设置？本地数据不受影响。')) return;
-  localStorage.removeItem(CLOUD_KEY);
-  document.getElementById('cloudToken').value = '';
-  document.getElementById('cloudGistId').value = '';
-  document.getElementById('cloudAutoSync').checked = false;
-  document.getElementById('cloudGistLink').style.display = 'none';
-  cloudSetStatus('设置已清除', 'info');
-};
-
-document.getElementById('cloudUpload').onclick = function(){ cloudUpload(); };
-document.getElementById('cloudDownload').onclick = function(){ cloudDownload(); };
-
-// Show/hide cloud tab in UI
 var _origShowTab = showTab;
 showTab = function(name){
   _origShowTab.apply(this, arguments);
@@ -1116,40 +1103,26 @@ showTab = function(name){
 // Auto-sync on app open: check if autoSync is on and sync from cloud
 function cloudAutoOnOpen(){
   var cfg = cloudGetConfig();
-  if(cfg.token && cfg.gistId && cfg.autoSync){
-    // Silent download - don't show status, just pull latest
+  if(cfg.token && cfg.owner && cfg.repo && cfg.autoSync){
     cloudDownloadSilent();
   }
 }
 
 function cloudDownloadSilent(){
   var cfg = cloudGetConfig();
-  if(!cfg.token || !cfg.gistId) return;
+  if(!cfg.token || !cfg.owner || !cfg.repo) return;
   if(window._cloudSyncing) return;
   window._cloudSyncing = true;
-  fetch(GIST_API+'/'+cfg.gistId, {
-    headers: {
-      'Authorization': 'Bearer '+cfg.token,
-      'Accept': 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28'
-    }
-  }).then(function(r){ return r.json(); })
+  fetch(giteeFileUrl(cfg)+'?access_token='+encodeURIComponent(cfg.token), {method:'GET'})
+    .then(function(r){ if(r.status===404) return null; return r.json(); })
     .then(function(data){
-      if(data.files && data.files[GIST_FN]){
-        cloudMergeState(data.files[GIST_FN].content);
+      if(data && data.content){
+        cloudMergeState(b64decode(data.content));
         renderAll();
-        // Update sync indicator
-        var fab = document.getElementById('cloudFab');
-        if(fab) fab.textContent = '✅';
-        setTimeout(function(){
-          if(fab) fab.textContent = '☁️';
-        }, 2000);
       }
     })
-    .catch(function(e){ /* silent fail */ })
-    .finally(function(){
-      window._cloudSyncing = false;
-    });
+    .catch(function(){})
+    .finally(function(){ window._cloudSyncing = false; });
 }
 
 // Call auto-sync when page loads
@@ -1183,14 +1156,18 @@ save = function(){
 <div id="cloudModal" class="modal hidden">
   <div class="modal-card">
     <div class="cloud-title">☁️ 云同步设置</div>
-    <div class="cloud-sub">数据存储在你的私有 GitHub Gist</div>
+    <div class="cloud-sub">数据存储在 Gitee 私有仓库（国内直连）</div>
     <div class="cloud-row">
-      <div class="cloud-lbl">🔑 GitHub Token</div>
-      <input type="password" id="cloudToken" class="cloud-input" placeholder="ghp_xxxx...（创建后粘贴）">
+      <div class="cloud-lbl">🔑 Gitee 私人令牌</div>
+      <input type="password" id="cloudToken" class="cloud-input" placeholder="私人令牌（需勾选 projects 权限）">
     </div>
     <div class="cloud-row">
-      <div class="cloud-lbl">🆔 Gist ID</div>
-      <input type="text" id="cloudGistId" class="cloud-input" placeholder="首次上传后自动生成">
+      <div class="cloud-lbl">👤 Gitee 用户名</div>
+      <input type="text" id="cloudOwner" class="cloud-input" placeholder="你的 Gitee 用户名">
+    </div>
+    <div class="cloud-row">
+      <div class="cloud-lbl">📦 仓库名</div>
+      <input type="text" id="cloudRepo" class="cloud-input" placeholder="私有仓库名（需先创建）">
     </div>
     <div class="cloud-row-toggle">
       <span>⚡ 自动同步</span>
@@ -1202,40 +1179,14 @@ save = function(){
       <button class="cloud-btn-dl" id="cloudDownload" onclick="cloudDownload();">⬇ 下载云端</button>
     </div>
     <div class="cloud-btns" style="margin-top:6px">
-      <button class="cloud-btn-save" id="cloudSave" onclick="var t=document.getElementById('cloudToken').value,g=document.getElementById('cloudGistId').value,a=document.getElementById('cloudAutoSync').checked;cloudSaveConfig({token:t,gistId:g,autoSync:a});cloudSetStatus('已保存','ok');">💾 保存</button>
-      <button class="cloud-btn-clear" id="cloudClear" onclick="if(confirm('确定清除云同步设置？')){localStorage.removeItem('dijun_cloud_v1');cloudSetStatus('已清除','info');}">🗑 清除</button>
+      <button class="cloud-btn-save" id="cloudSave" onclick="var t=document.getElementById('cloudToken').value,o=document.getElementById('cloudOwner').value,r=document.getElementById('cloudRepo').value,a=document.getElementById('cloudAutoSync').checked;if(!t||!o||!r){cloudSetStatus('请填写令牌、用户名、仓库名','err');return;}cloudSaveConfig({token:t,owner:o,repo:r,autoSync:a});cloudSetStatus('✅ 设置已保存！','ok');">💾 保存</button>
+      <button class="cloud-btn-clear" id="cloudClear" onclick="if(confirm('确定清除云同步设置？')){localStorage.removeItem('dijun_cloud_v1');document.getElementById('cloudToken').value='';document.getElementById('cloudOwner').value='';document.getElementById('cloudRepo').value='';document.getElementById('cloudAutoSync').checked=false;cloudSetStatus('设置已清除','info');}">🗑 清除</button>
     </div>
     <div class="cloud-gist-link" id="cloudGistLink" style="display:none"></div>
   </div>
 </div>
 
-<div id="cdbg" style="position:fixed;top:0;left:0;right:0;z-index:99999;padding:12px 16px;background:#222;color:#0f0;font-size:13px;display:none;font-family:monospace"></div><script>
-window.addEventListener("DOMContentLoaded",function(){
-  var ids=["cloudModal","cloudFab","cloudToken","cloudGistId","cloudAutoSync","cloudStatus","cloudUpload","cloudDownload","cloudSave","cloudClear","cloudGistLink"];
-  var miss=ids.filter(function(id){return !document.getElementById(id);});
-  var el=document.getElementById("cdbg");
-  if(miss.length>0){
-    el.style.background="#d32f2f";el.style.color="#fff";
-    el.textContent="CLOUD ERROR: Missing: "+miss.join(", ");el.style.display="block";
-    alert("Cloud elements missing: "+miss.join(", "));
-  } else {
-    el.style.background="#1b5e20";el.style.color="#fff";
-    el.textContent="CLOUD OK - all "+ids.length+" elements found";el.style.display="block";
-  }
-  console.log("openCloudModal:", typeof openCloudModal);
-  console.log("cloudSetStatus:", typeof cloudSetStatus);
-  setTimeout(function(){
-    var b=document.getElementById("cdbg");
-    if(typeof openCloudModal==="function"){
-      try{openCloudModal();b.textContent+=" | openCloudModal() called OK";b.style.background="#1b5e20";}
-      catch(e){b.textContent+=" | THREW: "+e.message;b.style.background="#b71c1c";}
-    } else {
-      b.textContent+=" | openCloudModal is: "+(typeof openCloudModal);b.style.background="#b71c1c";
-    }
-    b.style.display="block";
-  },2000);
-});
-<\/script>
+
 </body>
 </html>
 
