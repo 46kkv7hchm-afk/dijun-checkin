@@ -312,6 +312,7 @@
 
 <script>
 
+
 const STORE = 'dijun_checkin_v1';
 const TIERS = [
   {key:'longzhu', label:'龙珠', prob:0.06},
@@ -1174,6 +1175,50 @@ showTab = function(name){
   if(name==='cloud') openCloudModal();
 };
 
+// Auto-sync on app open: check if autoSync is on and sync from cloud
+function cloudAutoOnOpen(){
+  var cfg = cloudGetConfig();
+  if(cfg.token && cfg.gistId && cfg.autoSync){
+    // Silent download - don't show status, just pull latest
+    cloudDownloadSilent();
+  }
+}
+
+function cloudDownloadSilent(){
+  var cfg = cloudGetConfig();
+  if(!cfg.token || !cfg.gistId) return;
+  if(window._cloudSyncing) return;
+  window._cloudSyncing = true;
+  fetch(GIST_API+'/'+cfg.gistId, {
+    headers: {
+      'Authorization': 'Bearer '+cfg.token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    }
+  }).then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.files && data.files[GIST_FN]){
+        cloudMergeState(data.files[GIST_FN].content);
+        renderAll();
+        // Update sync indicator
+        var fab = document.getElementById('cloudFab');
+        if(fab) fab.textContent = '✅';
+        setTimeout(function(){
+          if(fab) fab.textContent = '☁️';
+        }, 2000);
+      }
+    })
+    .catch(function(e){ /* silent fail */ })
+    .finally(function(){
+      window._cloudSyncing = false;
+    });
+}
+
+// Call auto-sync when page loads
+window.addEventListener('load', function(){
+  setTimeout(cloudAutoOnOpen, 1500); // delay 1.5s to let page render first
+});
+
 // Auto-sync hook: wrap save()
 var _origSave = save;
 save = function(){
@@ -1191,7 +1236,9 @@ save = function(){
   }
 };
 
+
 </script>
+
 
 <button class="cloud-fab" id="cloudFab" title="云同步" onclick="openCloudModal()">☁️</button>
 </body>
