@@ -1131,6 +1131,48 @@ window.addEventListener('load', function(){
 });
 
 // Auto-sync hook: wrap save()
+function exportJSON(){
+  var data = JSON.stringify(state, null, 0);
+  var blob = new Blob([data], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var ts = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = 'dijun-backup-'+ts+'.json';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  cloudSetStatus('✅ 已导出 dijun-backup-'+ts+'.json', 'ok');
+}
+
+function importJSON(ev){
+  var f = ev.target.files && ev.target.files[0];
+  if(!f){ return; }
+  if(!confirm('导入会覆盖本地数据，确定继续？\\n（建议先导出当前数据做备份）')){
+    ev.target.value = '';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var obj = JSON.parse(e.target.result);
+      var keys = ['completions','schedule','punishments','draws','lottery','savings','streakAwarded','prizes','dailyLimit','totalDraws','parentPIN'];
+      for(var i=0;i<keys.length;i++){
+        var k = keys[i];
+        if(obj[k] !== undefined){ state[k] = obj[k]; }
+      }
+      localStorage.setItem(STORE, JSON.stringify(state));
+      migrateState();
+      renderAll();
+      cloudSetStatus('✅ 导入成功！', 'ok');
+    }catch(err){
+      cloudSetStatus('❌ 导入失败：'+err.message, 'err');
+    }
+    ev.target.value = '';
+  };
+  reader.readAsText(f, 'utf-8');
+}
+
 var _origSave = save;
 save = function(){
   _origSave.apply(this, arguments);
@@ -1181,6 +1223,13 @@ save = function(){
     <div class="cloud-btns" style="margin-top:6px">
       <button class="cloud-btn-save" id="cloudSave" onclick="var t=document.getElementById('cloudToken').value,o=document.getElementById('cloudOwner').value,r=document.getElementById('cloudRepo').value,a=document.getElementById('cloudAutoSync').checked;if(!t||!o||!r){cloudSetStatus('请填写令牌、用户名、仓库名','err');return;}cloudSaveConfig({token:t,owner:o,repo:r,autoSync:a});cloudSetStatus('✅ 设置已保存！','ok');">💾 保存</button>
       <button class="cloud-btn-clear" id="cloudClear" onclick="if(confirm('确定清除云同步设置？')){localStorage.removeItem('dijun_cloud_v1');document.getElementById('cloudToken').value='';document.getElementById('cloudOwner').value='';document.getElementById('cloudRepo').value='';document.getElementById('cloudAutoSync').checked=false;cloudSetStatus('设置已清除','info');}">🗑 清除</button>
+    </div>
+    <div class="cloud-btns" style="margin-top:6px">
+      <button class="cloud-btn-save" onclick="exportJSON();">📤 导出 JSON</button>
+      <label class="cloud-btn-dl" style="display:inline-block;text-align:center;padding:10px 14px;border-radius:8px;cursor:pointer;background:#f0f4ff;color:#5b6cdb;font-size:14px;">
+        📥 导入 JSON
+        <input type="file" id="jsonImportInput" accept=".json" style="display:none" onchange="importJSON(event);">
+      </label>
     </div>
     <div class="cloud-gist-link" id="cloudGistLink" style="display:none"></div>
   </div>
