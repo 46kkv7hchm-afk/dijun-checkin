@@ -210,6 +210,7 @@
 </div>
 
 <script>
+
 const STORE = 'dijun_checkin_v1';
 const TIERS = [
   {key:'longzhu', label:'龙珠', prob:0.06},
@@ -231,34 +232,34 @@ const ENCOURAGE = ['再接再厉,明天会更好!','就差一点点,下次一定
 let lastEncourage='';
 function renderSavings(){
   const el = document.getElementById('tab-savings');
-  const s = state.savings || {total:0, history:[], milestoneNotified:false};
+  const s = state.savings || {total:0, history:[], milestone:0};
   const goal = 1000;
-  const pct = Math.min(100, Math.round(s.total / goal * 100));
+  const milestoneCount = Math.floor(s.total / goal);
+  const pct = Math.min(100, Math.round((s.total % goal) / goal * 100));
+  const currentMilestone = milestoneCount * goal;
+  const nextMilestone = (milestoneCount + 1) * goal;
+  const remaining = nextMilestone - s.total;
   let h = '<div class="savings-card">';
   h += '<div style="font-size:13px;opacity:0.85">当前储蓄金</div>';
   h += '<div class="savings-amount">'+s.total.toFixed(1)+'<span>元</span></div>';
   h += '<div class="savings-progress"><div class="savings-progress-bar" style="width:'+pct+'%">'+(pct>=10?pct+'%':' ')+'</div></div>';
-  h += '<div class="savings-goal">距离目标 '+goal+' 元还差 '+(goal-s.total>0?(goal-s.total).toFixed(1):'0')+' 元</div>';
-  if(s.total >= goal && !s.milestoneNotified){
-    h += '<div class="savings-milestone"><strong>🎉 储蓄金已达标！</strong><br>可获额外奖励 <strong>+50元</strong> 储蓄奖励！<br><br><button class="btn" onclick="claimSavingsReward()" style="background:#ffd700;color:#333;padding:8px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer">领取50元奖励</button></div>';
+  h += '<div class="savings-goal">距下一阶段 '+nextMilestone+' 元还差 '+remaining.toFixed(1)+' 元</div>';
+  if(remaining <= 0){
+    h += '<div class="savings-milestone"><strong>🎉 储蓄金已达标！</strong><br>家长存入 +50元 奖励即可达成下一阶段！</div>';
   }
   h += '</div>';
-  h += '<div class="savings-msg" style="text-align:center;color:#888;font-size:13px;margin-bottom:12px">每满1000元储蓄金，奖励50元作为储蓄奖励</div>';
-  h += '<div class="savings-actions">';
-  h += '<button class="savings-deposit" onclick="openSavingsDeposit()">💰 存入</button>';
-  h += '<button class="savings-withdraw" onclick="openSavingsWithdraw()">💸 取出</button>';
-  h += '</div>';
-  h += '<button class="savings-reset" onclick="openSavingsReset()" style="width:100%;margin-bottom:16px;padding:8px;border:none;border-radius:8px;cursor:pointer">🗑 清空储蓄记录</button>';
+  h += '<div class="savings-msg" style="text-align:center;color:#888;font-size:13px;margin-bottom:16px">来源：每次抽奖奖金的50%自动存入 | 每满1000元家长奖励+50元</div>';
   h += '<div class="savings-record">';
-  h += '<div class="savings-record-title">📋 存取记录</div>';
-  if(!s.history || s.history.length){
-    h += '<div class="savings-empty">暂无记录</div>';
+  h += '<div class="savings-record-title">📋 储蓄记录（最近30条）</div>';
+  if(!s.history || !s.history.length){
+    h += '<div class="savings-empty">暂无记录，完成抽奖后自动积累</div>';
   } else {
     s.history.slice(0, 30).forEach(function(r){
-      const cls = r.type === 'deposit' ? 'deposit' : (r.type === 'reward' ? 'reward' : 'withdraw');
+      const cls = r.type === 'lottery' ? 'deposit' : (r.type === 'reward' ? 'reward' : 'withdraw');
       const sign = r.type === 'withdraw' ? '-' : '+';
+      const reason = r.type === 'lottery' ? (r.prize ? r.prize+'奖励' : '抽奖') : r.reason;
       h += '<div class="savings-record-item '+cls+'">';
-      h += '<div><div>'+sign+r.amount.toFixed(1)+'元</div><div class="srec-reason">'+esc(r.reason)+' · '+r.date+'</div></div>';
+      h += '<div><div>'+sign+r.amount.toFixed(1)+'元</div><div class="srec-reason">'+reason+' · '+r.date+'</div></div>';
       h += '<div style="font-size:12px;color:#999">'+r.date+'</div>';
       h += '</div>';
     });
@@ -267,62 +268,38 @@ function renderSavings(){
   el.innerHTML = h;
 }
 
-function openSavingsDeposit(){
-  const amt = prompt('请输入存入金额（元）：','');
-  if(amt===null) return;
-  const n = parseFloat(amt);
-  if(isNaN(n)||n<=0){ alert('请输入有效金额'); return; }
-  state.savings = state.savings || {total:0, history:[], milestoneNotified:false};
-  state.savings.total += n;
-  state.savings.history.unshift({type:'deposit', amount:n, reason:'手动存入', date:today()});
-  save();
-  checkSavingsMilestone();
-  renderSavings();
-  if(state.currentView==='savings') renderNav();
-}
+// openSavingsDeposit 已停用（手动存取功能已移除）
+function openSavingsDeposit(){ alert('此功能已停用。储蓄金全部来自抽奖奖金自动积累。'); }
 
-function openSavingsWithdraw(){
-  const s = state.savings || {total:0};
-  if(s.total <= 0){ alert('储蓄金为0，无需取出'); return; }
-  const amt = prompt('当前储蓄 '+s.total.toFixed(1)+' 元\n请输入取出金额（元）：','');
-  if(amt===null) return;
-  const n = parseFloat(amt);
-  if(isNaN(n)||n<=0){ alert('请输入有效金额'); return; }
-  if(n > s.total){ alert('取出金额不能超过当前储蓄金'); return; }
-  state.savings.total -= n;
-  state.savings.history.unshift({type:'withdraw', amount:n, reason:'手动取出', date:today()});
-  save();
-  renderSavings();
-  if(state.currentView==='savings') renderNav();
-}
+// openSavingsWithdraw 已停用（手动存取功能已移除）
+function openSavingsWithdraw(){ alert('此功能已停用。储蓄金全部来自抽奖奖金自动积累。'); }
 
-function openSavingsReset(){
-  if(!confirm('确定要清空所有储蓄记录吗？此操作不可恢复。')) return;
-  state.savings = {total:0, history:[], milestoneNotified:false};
-  save();
-  renderSavings();
-  if(state.currentView==='savings') renderNav();
-}
+// openSavingsReset 已停用（手动存取功能已移除）
+function openSavingsReset(){ alert('此功能已停用。储蓄金全部来自抽奖奖金自动积累。'); }
 
 function checkSavingsMilestone(){
   const s = state.savings;
-  if(!s || !s.milestoneNotified === undefined) return;
-  // milestoneNotified tracks if current 1000-block has been claimed
-  // When total increases enough, reset flag to allow next claim
-  const fullMilestones = Math.floor(s.total / 1000);
-  s.milestoneNotified = false; // always allow claiming when threshold met
+  if(!s) return;
+  // Check if crossed a 1000-milestone boundary not yet acknowledged
+  const currentMilestone = Math.floor(s.total / 1000);
+  if(currentMilestone > (s.milestone || 0)){
+    s.milestone = currentMilestone;
+    save();
+    setTimeout(function(){
+      const confirmed = confirm('🎉 储蓄金已达到 '+currentMilestone+'000 元！\n\n是否存入家长奖励 +50元？\n\n（点"确定"奖励立即到账）');
+      if(confirmed){
+        s.total += 50;
+        s.history.unshift({type:'reward', amount:50, reason:'家长存入（储蓄达标'+currentMilestone+'000元奖励）', date:today()});
+        save();
+        alert('+50元 已存入储蓄金！');
+        if(state.currentView === 'savings') renderSavings();
+      }
+    }, 500);
+  }
 }
 
-function claimSavingsReward(){
-  if(!confirm('确认领取储蓄达标奖励 +50元？\n\n奖励将存入储蓄金，储蓄金达到后还可继续领取。')) return;
-  state.savings.total += 50;
-  state.savings.history.unshift({type:'reward', amount:50, reason:'储蓄达标奖励（每满1000元）', date:today()});
-  state.savings.milestoneNotified = false; // reset so next milestone can be triggered
-  save();
-  alert('恭喜！+50元已存入储蓄金！');
-  renderSavings();
-  if(state.currentView==='savings') renderNav();
-}
+// claimSavingsReward 已停用（手动存取功能已移除）
+function claimSavingsReward(){ alert('此功能已停用。储蓄金全部来自抽奖奖金自动积累。'); }
 
 
 function tierOfName(name){ const p=(state.prizes||[]).find(pp=>pp.name===name); return tierKey(p||{name:name||''}); }
@@ -417,7 +394,7 @@ const PUNISH_ITEMS = [
 ];
 
 // ---------- 状态 ----------
-function defaultState(){ return { completions:{}, schedule:{}, punishments:[], lottery:{pool:0, history:[]}, streakAwarded:{}, draws:[], prizes: DEFAULT_PRIZES.map(p=>({...p})), dailyLimit: 0, totalDraws: 0, parentPIN: null, pinTries: 0, pinLocked: 0, savings:{total:0, history:[], milestoneNotified:false} }; }
+function defaultState(){ return { completions:{}, schedule:{}, punishments:[], lottery:{pool:0, history:[]}, streakAwarded:{}, draws:[], prizes: DEFAULT_PRIZES.map(p=>({...p})), dailyLimit: 0, totalDraws: 0, parentPIN: null, pinTries: 0, pinLocked: 0, savings:{total:0, history:[], milestone:0} }; }
 let state = load() || defaultState();
 if(Array.isArray(state.prizes) && state.prizes.some(p=>typeof p==='string')) state.prizes = DEFAULT_PRIZES.map(p=>({...p}));
 state.prizes = (state.prizes && state.prizes.length) ? state.prizes : DEFAULT_PRIZES.map(p=>({...p}));
@@ -576,7 +553,19 @@ function doDraw(){
       }
       save(); renderReward(); renderStat();
       if(state.totalDraws>=120){ setTimeout(()=>{ alert('🎉 120次已抽完!\n请去「设置」重新设置奖品池和抽奖次数。'); }, 300); }
-      if(picked){ playWin(); confetti(); }
+      if(picked){
+        playWin(); confetti();
+        // 奖金一半自动进储蓄金
+        const price = picked.price || 0;
+        if(price > 0){
+          const half = price / 2;
+          state.savings = state.savings || {total:0, history:[], milestone:0};
+          state.savings.total += half;
+          state.savings.history.unshift({type:'lottery', amount:half, reason:'抽奖奖金('+price+'元)', date:today(), prize:picked.name});
+          // 检查1000元里程碑
+          checkSavingsMilestone();
+        }
+      }
     }
   },80);
 }
@@ -900,7 +889,9 @@ document.getElementById('prev').onclick = ()=>{ viewDate=addDays(viewDate,-1); r
 document.getElementById('next').onclick = ()=>{ viewDate=addDays(viewDate,1); renderAll(); };
 
 renderAll();
+
 </script>
+
 </body>
 </html>
 
