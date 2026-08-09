@@ -1015,7 +1015,7 @@ function cloudUpload(cb){
       'Accept': 'application/vnd.github+json',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({description:'帝君打卡数据备份', public:false, files: {[GIST_FN]:{content:body}}})
+    body: (function(){ var filesObj={}; filesObj[GIST_FN]={content:body}; return JSON.stringify({description:'帝君打卡数据备份', public:false, files: filesObj}); })()
   }).then(function(r){ return r.json(); })
     .then(function(data){
       if(data.id){
