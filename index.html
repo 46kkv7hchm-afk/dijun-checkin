@@ -227,7 +227,7 @@
   <button data-tab="punish">⚠️ 惩罚记录</button>
   <button data-tab="stat">📊 统计</button>
   <button data-tab="savings">💰 储蓄</button>
-  <button data-tab="cloud" style="color:#667eea">☁️ 同步</button>
+  
 </div>
 <div class="wrap">
   <div id="tab-reward"></div>
@@ -235,72 +235,11 @@
   <div id="tab-punish" class="hidden"></div>
   <div id="tab-stat" class="hidden"></div>
   <div id="tab-savings" class="hidden"></div>
-  <div id="tab-cloud" class="hidden">
-    <div style="padding:16px 4px;text-align:center">
-      <div style="font-size:22px;margin-bottom:8px">☁️</div>
-      <div style="font-size:15px;font-weight:bold;margin-bottom:4px">云同步设置</div>
-      <div style="font-size:13px;color:#888;margin-bottom:16px">数据加密存储在你的私有 GitHub Gist，多设备实时同步</div>
-      <div style="background:#f8faff;border-radius:12px;padding:16px;text-align:left;max-width:380px;margin:0 auto">
-        <div class="cloud-row">
-          <div class="cloud-lbl">🔑 GitHub Token</div>
-          <input type="password" data-sync="token" class="cloud-input" placeholder="ghp_xxxx...（创建后粘贴）">
-        </div>
-        <div class="cloud-row">
-          <div class="cloud-lbl">🆔 Gist ID</div>
-          <input type="text" data-sync="gistId" class="cloud-input" placeholder="首次上传后自动生成，也可手动填写">
-        </div>
-        <div class="cloud-row-toggle">
-          <span>⚡ 自动同步（每次操作后）</span>
-          <label class="cloud-toggle"><input type="checkbox" data-sync="autoSync"><span class="cloud-toggle-slider"></span></label>
-        </div>
-        <div data-sync-status="true"></div>
-        <div class="cloud-btns">
-          <button class="cloud-btn-upload" >⬆ 上传本地</button>
-          <button class="cloud-btn-dl" >⬇ 下载云端</button>
-        </div>
-        <div class="cloud-btns" style="margin-top:6px">
-          <button class="cloud-btn-save" >💾 保存</button>
-          <button class="cloud-btn-clear" >🗑 清除</button>
-        </div>
-        <div class="cloud-gist-link" data-sync-link="true" style="display:none"></div>
-      </div>
-      <div style="margin-top:16px;font-size:12px;color:#aaa;line-height:1.8">
-        Token 仅存在本地 · 首次使用点「上传本地」创建 Gist<br>
-        之后在另一设备填入同一 Token 和 Gist ID 即可同步
-      </div>
-    </div>
-  </div>
+  
 </div>
 
 
-<div id="cloudModal" class="modal hidden">
-  <div class="modal-card">
-    <div class="cloud-title">☁️ 云同步设置</div>
-    <div class="cloud-sub">数据存储在你的私有 GitHub Gist</div>
-    <div class="cloud-row">
-      <div class="cloud-lbl">🔑 GitHub Token</div>
-      <input type="password" data-sync="token" class="cloud-input" placeholder="ghp_xxxx...（创建后粘贴）">
-    </div>
-    <div class="cloud-row">
-      <div class="cloud-lbl">🆔 Gist ID</div>
-      <input type="text" data-sync="gistId" class="cloud-input" placeholder="首次上传后自动生成">
-    </div>
-    <div class="cloud-row-toggle">
-      <span>⚡ 自动同步</span>
-      <label class="cloud-toggle"><input type="checkbox" data-sync="autoSync"><span class="cloud-toggle-slider"></span></label>
-    </div>
-    <div data-sync-status="true"></div>
-    <div class="cloud-btns">
-      <button class="cloud-btn-upload" id="cloudUpload">⬆ 上传本地</button>
-      <button class="cloud-btn-dl" id="cloudDownload">⬇ 下载云端</button>
-    </div>
-    <div class="cloud-btns" style="margin-top:6px">
-      <button class="cloud-btn-save" id="cloudSave">💾 保存</button>
-      <button class="cloud-btn-clear" id="cloudClear">🗑 清除</button>
-    </div>
-    <div class="cloud-gist-link" data-sync-link="true" style="display:none"></div>
-  </div>
-</div>
+
 
 <div id="drawModal" class="modal hidden">
   <div class="modal-card">
@@ -310,10 +249,7 @@
   </div>
 </div>
 
-
 <script>
-
-
 
 
 const STORE = 'dijun_checkin_v1';
@@ -1144,7 +1080,7 @@ function cloudDownload(){
     });
 }
 
-function cloudSaveFn(){
+document.getElementById('cloudSave').onclick = function(){
   var token = document.getElementById('cloudToken').value.trim();
   var gistId = document.getElementById('cloudGistId').value.trim();
   var autoSync = document.getElementById('cloudAutoSync').checked;
@@ -1156,20 +1092,17 @@ function cloudSaveFn(){
     linkEl.innerHTML = '<a href="https://gist.github.com/'+gistId+'" target="_blank">📎 查看 Gist</a>';
     linkEl.style.display = 'block';
   }
-}
-document.getElementById('cloudSave').onclick = function(){ cloudSaveFn(); };
+};
 
-function cloudClearFn(){
+document.getElementById('cloudClear').onclick = function(){
   if(!confirm('确定清除云同步设置？本地数据不受影响。')) return;
   localStorage.removeItem(CLOUD_KEY);
-  var el;
-  el = document.getElementById('cloudToken'); if(el) el.value = '';
-  el = document.getElementById('cloudGistId'); if(el) el.value = '';
-  el = document.getElementById('cloudAutoSync'); if(el) el.checked = false;
-  el = document.getElementById('cloudGistLink'); if(el) el.style.display = 'none';
+  document.getElementById('cloudToken').value = '';
+  document.getElementById('cloudGistId').value = '';
+  document.getElementById('cloudAutoSync').checked = false;
+  document.getElementById('cloudGistLink').style.display = 'none';
   cloudSetStatus('设置已清除', 'info');
-}
-document.getElementById('cloudClear').onclick = function(){ cloudClearFn(); };
+};
 
 document.getElementById('cloudUpload').onclick = function(){ cloudUpload(); };
 document.getElementById('cloudDownload').onclick = function(){ cloudDownload(); };
@@ -1222,15 +1155,7 @@ function cloudDownloadSilent(){
 
 // Call auto-sync when page loads
 window.addEventListener('load', function(){
-  setTimeout(cloudAutoOnOpen, 1500);
-  // Delegate clicks on tab-cloud buttons (modal buttons use onclick)
-  document.addEventListener('click', function(e){
-    var el;
-    el = e.target.closest('.js-cloud-upload'); if(el){ cloudUpload(); return; }
-    el = e.target.closest('.js-cloud-download'); if(el){ cloudDownload(); return; }
-    el = e.target.closest('.js-cloud-save'); if(el){ if(typeof cloudSaveFn==='function') cloudSaveFn(); return; }
-    el = e.target.closest('.js-cloud-clear'); if(el){ if(typeof cloudClearFn==='function') cloudClearFn(); return; }
-  });
+  setTimeout(cloudAutoOnOpen, 1500); // delay 1.5s to let page render first
 });
 
 // Auto-sync hook: wrap save()
@@ -1251,11 +1176,40 @@ save = function(){
 };
 
 
-
-
 </script>
 
-d="cloudFab" title="云同步" onclick="openCloudModal()">☁️</button>
+
+<button class="cloud-fab" id="cloudFab" title="云同步" onclick="openCloudModal()">☁️</button>
+
+<div id="cloudModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="cloud-title">☁️ 云同步设置</div>
+    <div class="cloud-sub">数据存储在你的私有 GitHub Gist</div>
+    <div class="cloud-row">
+      <div class="cloud-lbl">🔑 GitHub Token</div>
+      <input type="password" id="cloudToken" class="cloud-input" placeholder="ghp_xxxx...（创建后粘贴）">
+    </div>
+    <div class="cloud-row">
+      <div class="cloud-lbl">🆔 Gist ID</div>
+      <input type="text" id="cloudGistId" class="cloud-input" placeholder="首次上传后自动生成">
+    </div>
+    <div class="cloud-row-toggle">
+      <span>⚡ 自动同步</span>
+      <label class="cloud-toggle"><input type="checkbox" id="cloudAutoSync"><span class="cloud-toggle-slider"></span></label>
+    </div>
+    <div id="cloudStatus"></div>
+    <div class="cloud-btns">
+      <button class="cloud-btn-upload" id="cloudUpload">⬆ 上传本地</button>
+      <button class="cloud-btn-dl" id="cloudDownload">⬇ 下载云端</button>
+    </div>
+    <div class="cloud-btns" style="margin-top:6px">
+      <button class="cloud-btn-save" id="cloudSave">💾 保存</button>
+      <button class="cloud-btn-clear" id="cloudClear">🗑 清除</button>
+    </div>
+    <div class="cloud-gist-link" id="cloudGistLink" style="display:none"></div>
+  </div>
+</div>
+
 </body>
 </html>
 
