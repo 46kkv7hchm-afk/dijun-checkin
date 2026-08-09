@@ -243,26 +243,26 @@
       <div style="background:#f8faff;border-radius:12px;padding:16px;text-align:left;max-width:380px;margin:0 auto">
         <div class="cloud-row">
           <div class="cloud-lbl">🔑 GitHub Token</div>
-          <input type="password" id="cloudToken" class="cloud-input" placeholder="ghp_xxxx...（创建后粘贴）">
+          <input type="password" data-sync="token" class="cloud-input" placeholder="ghp_xxxx...（创建后粘贴）">
         </div>
         <div class="cloud-row">
           <div class="cloud-lbl">🆔 Gist ID</div>
-          <input type="text" id="cloudGistId" class="cloud-input" placeholder="首次上传后自动生成，也可手动填写">
+          <input type="text" data-sync="gistId" class="cloud-input" placeholder="首次上传后自动生成，也可手动填写">
         </div>
         <div class="cloud-row-toggle">
           <span>⚡ 自动同步（每次操作后）</span>
-          <label class="cloud-toggle"><input type="checkbox" id="cloudAutoSync"><span class="cloud-toggle-slider"></span></label>
+          <label class="cloud-toggle"><input type="checkbox" data-sync="autoSync"><span class="cloud-toggle-slider"></span></label>
         </div>
-        <div id="cloudStatus"></div>
+        <div data-sync-status="true"></div>
         <div class="cloud-btns">
-          <button class="cloud-btn-upload" id="cloudUpload">⬆ 上传本地</button>
-          <button class="cloud-btn-dl" id="cloudDownload">⬇ 下载云端</button>
+          <button class="cloud-btn-upload" >⬆ 上传本地</button>
+          <button class="cloud-btn-dl" >⬇ 下载云端</button>
         </div>
         <div class="cloud-btns" style="margin-top:6px">
-          <button class="cloud-btn-save" id="cloudSave">💾 保存</button>
-          <button class="cloud-btn-clear" id="cloudClear">🗑 清除</button>
+          <button class="cloud-btn-save" >💾 保存</button>
+          <button class="cloud-btn-clear" >🗑 清除</button>
         </div>
-        <div class="cloud-gist-link" id="cloudGistLink" style="display:none"></div>
+        <div class="cloud-gist-link" data-sync-link="true" style="display:none"></div>
       </div>
       <div style="margin-top:16px;font-size:12px;color:#aaa;line-height:1.8">
         Token 仅存在本地 · 首次使用点「上传本地」创建 Gist<br>
@@ -279,17 +279,17 @@
     <div class="cloud-sub">数据存储在你的私有 GitHub Gist</div>
     <div class="cloud-row">
       <div class="cloud-lbl">🔑 GitHub Token</div>
-      <input type="password" id="cloudToken" class="cloud-input" placeholder="ghp_xxxx...（创建后粘贴）">
+      <input type="password" data-sync="token" class="cloud-input" placeholder="ghp_xxxx...（创建后粘贴）">
     </div>
     <div class="cloud-row">
       <div class="cloud-lbl">🆔 Gist ID</div>
-      <input type="text" id="cloudGistId" class="cloud-input" placeholder="首次上传后自动生成">
+      <input type="text" data-sync="gistId" class="cloud-input" placeholder="首次上传后自动生成">
     </div>
     <div class="cloud-row-toggle">
       <span>⚡ 自动同步</span>
-      <label class="cloud-toggle"><input type="checkbox" id="cloudAutoSync"><span class="cloud-toggle-slider"></span></label>
+      <label class="cloud-toggle"><input type="checkbox" data-sync="autoSync"><span class="cloud-toggle-slider"></span></label>
     </div>
-    <div id="cloudStatus"></div>
+    <div data-sync-status="true"></div>
     <div class="cloud-btns">
       <button class="cloud-btn-upload" id="cloudUpload">⬆ 上传本地</button>
       <button class="cloud-btn-dl" id="cloudDownload">⬇ 下载云端</button>
@@ -298,7 +298,7 @@
       <button class="cloud-btn-save" id="cloudSave">💾 保存</button>
       <button class="cloud-btn-clear" id="cloudClear">🗑 清除</button>
     </div>
-    <div class="cloud-gist-link" id="cloudGistLink" style="display:none"></div>
+    <div class="cloud-gist-link" data-sync-link="true" style="display:none"></div>
   </div>
 </div>
 
@@ -310,7 +310,10 @@
   </div>
 </div>
 
+
 <script>
+
+
 
 
 const STORE = 'dijun_checkin_v1';
@@ -1141,7 +1144,7 @@ function cloudDownload(){
     });
 }
 
-document.getElementById('cloudSave').onclick = function(){
+function cloudSaveFn(){
   var token = document.getElementById('cloudToken').value.trim();
   var gistId = document.getElementById('cloudGistId').value.trim();
   var autoSync = document.getElementById('cloudAutoSync').checked;
@@ -1153,17 +1156,20 @@ document.getElementById('cloudSave').onclick = function(){
     linkEl.innerHTML = '<a href="https://gist.github.com/'+gistId+'" target="_blank">📎 查看 Gist</a>';
     linkEl.style.display = 'block';
   }
-};
+}
+document.getElementById('cloudSave').onclick = function(){ cloudSaveFn(); };
 
-document.getElementById('cloudClear').onclick = function(){
+function cloudClearFn(){
   if(!confirm('确定清除云同步设置？本地数据不受影响。')) return;
   localStorage.removeItem(CLOUD_KEY);
-  document.getElementById('cloudToken').value = '';
-  document.getElementById('cloudGistId').value = '';
-  document.getElementById('cloudAutoSync').checked = false;
-  document.getElementById('cloudGistLink').style.display = 'none';
+  var el;
+  el = document.getElementById('cloudToken'); if(el) el.value = '';
+  el = document.getElementById('cloudGistId'); if(el) el.value = '';
+  el = document.getElementById('cloudAutoSync'); if(el) el.checked = false;
+  el = document.getElementById('cloudGistLink'); if(el) el.style.display = 'none';
   cloudSetStatus('设置已清除', 'info');
-};
+}
+document.getElementById('cloudClear').onclick = function(){ cloudClearFn(); };
 
 document.getElementById('cloudUpload').onclick = function(){ cloudUpload(); };
 document.getElementById('cloudDownload').onclick = function(){ cloudDownload(); };
@@ -1216,7 +1222,15 @@ function cloudDownloadSilent(){
 
 // Call auto-sync when page loads
 window.addEventListener('load', function(){
-  setTimeout(cloudAutoOnOpen, 1500); // delay 1.5s to let page render first
+  setTimeout(cloudAutoOnOpen, 1500);
+  // Delegate clicks on tab-cloud buttons (modal buttons use onclick)
+  document.addEventListener('click', function(e){
+    var el;
+    el = e.target.closest('.js-cloud-upload'); if(el){ cloudUpload(); return; }
+    el = e.target.closest('.js-cloud-download'); if(el){ cloudDownload(); return; }
+    el = e.target.closest('.js-cloud-save'); if(el){ if(typeof cloudSaveFn==='function') cloudSaveFn(); return; }
+    el = e.target.closest('.js-cloud-clear'); if(el){ if(typeof cloudClearFn==='function') cloudClearFn(); return; }
+  });
 });
 
 // Auto-sync hook: wrap save()
@@ -1237,10 +1251,11 @@ save = function(){
 };
 
 
+
+
 </script>
 
-
-<button class="cloud-fab" id="cloudFab" title="云同步" onclick="openCloudModal()">☁️</button>
+d="cloudFab" title="云同步" onclick="openCloudModal()">☁️</button>
 </body>
 </html>
 
