@@ -1199,12 +1199,12 @@ save = function(){
     </div>
     <div id="cloudStatus"></div>
     <div class="cloud-btns">
-      <button class="cloud-btn-upload" id="cloudUpload">⬆ 上传本地</button>
-      <button class="cloud-btn-dl" id="cloudDownload">⬇ 下载云端</button>
+      <button class="cloud-btn-upload" id="cloudUpload" onclick="cloudUpload();">⬆ 上传本地</button>
+      <button class="cloud-btn-dl" id="cloudDownload" onclick="cloudDownload();">⬇ 下载云端</button>
     </div>
     <div class="cloud-btns" style="margin-top:6px">
-      <button class="cloud-btn-save" id="cloudSave">💾 保存</button>
-      <button class="cloud-btn-clear" id="cloudClear">🗑 清除</button>
+      <button class="cloud-btn-save" id="cloudSave" onclick="var t=document.getElementById('cloudToken').value,g=document.getElementById('cloudGistId').value,a=document.getElementById('cloudAutoSync').checked;cloudSaveConfig({token:t,gistId:g,autoSync:a});cloudSetStatus('已保存','ok');">💾 保存</button>
+      <button class="cloud-btn-clear" id="cloudClear" onclick="if(confirm('确定清除云同步设置？')){localStorage.removeItem('dijun_cloud_v1');cloudSetStatus('已清除','info');}">🗑 清除</button>
     </div>
     <div class="cloud-gist-link" id="cloudGistLink" style="display:none"></div>
   </div>
