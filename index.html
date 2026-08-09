@@ -69,6 +69,112 @@
   @keyframes pop { 0%{transform:scale(.3);opacity:0} 100%{transform:scale(1);opacity:1} }
   .draw-close { margin-top: 14px; background: #5b6ef5; color: #fff; border: none; border-radius: 10px; padding: 11px 20px; font-size: 15px; font-weight: 700; }
   .stat-line { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f0f2f5; font-size:14px; }
+
+  /* 储蓄页样式 */
+  .savings-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 24px 20px;
+    color: white;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(102,126,234,0.3);
+  }
+  .savings-amount {
+    font-size: 48px;
+    font-weight: bold;
+    margin: 8px 0;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .savings-amount span { font-size: 24px; }
+  .savings-msg {
+    font-size: 14px;
+    opacity: 0.9;
+    margin-top: 6px;
+  }
+  .savings-progress {
+    background: rgba(255,255,255,0.3);
+    border-radius: 8px;
+    height: 12px;
+    margin: 16px 0 8px;
+    overflow: hidden;
+  }
+  .savings-progress-bar {
+    background: #ffd700;
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.5s ease;
+    color: #333;
+    font-size: 10px;
+    line-height: 12px;
+    font-weight: bold;
+    text-align: right;
+    padding-right: 4px;
+  }
+  .savings-goal {
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  .savings-actions {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  .savings-actions button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .savings-deposit { background: #ffd700; color: #333; }
+  .savings-withdraw { background: rgba(255,255,255,0.25); color: white; }
+  .savings-reset { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); font-size: 13px; }
+  .savings-record {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .savings-record-title {
+    padding: 12px 16px;
+    background: #f7f8fa;
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+  }
+  .savings-record-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+  }
+  .savings-record-item:last-child { border-bottom: none; }
+  .savings-record-item.deposit { color: #27ae60; }
+  .savings-record-item.withdraw { color: #e74c3c; }
+  .savings-record-item.reward { color: #8B5CF6; }
+  .savings-record-item .srec-reason { font-size: 12px; color: #999; }
+  .savings-empty {
+    text-align: center;
+    padding: 30px;
+    color: #aaa;
+    font-size: 14px;
+  }
+  .savings-milestone {
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    text-align: center;
+    color: #333;
+  }
+  .savings-milestone strong { font-size: 18px; }
+
 </style>
 </head>
 <body>
@@ -85,12 +191,14 @@
   <button data-tab="plan">⏰ 时间规划</button>
   <button data-tab="punish">⚠️ 惩罚记录</button>
   <button data-tab="stat">📊 统计</button>
+  <button data-tab="savings">💰 储蓄</button>
 </div>
 <div class="wrap">
   <div id="tab-reward"></div>
   <div id="tab-plan" class="hidden"></div>
   <div id="tab-punish" class="hidden"></div>
   <div id="tab-stat" class="hidden"></div>
+  <div id="tab-savings" class="hidden"></div>
 </div>
 
 <div id="drawModal" class="modal hidden">
@@ -121,6 +229,102 @@ const DEFAULT_PRIZES = [
 ];
 const ENCOURAGE = ['再接再厉,明天会更好!','就差一点点,下次一定中!','坚持就是胜利,加油!','今天的运气在攒着呢~','勇于尝试的你最棒!','小遗憾,也是大成长!','好运正在路上,别急~','你已经很努力啦!','下一份惊喜在等你!','保持微笑,幸运会来!','过程比结果更珍贵哦','稳住,我们能赢!'];
 let lastEncourage='';
+function renderSavings(){
+  const el = document.getElementById('tab-savings');
+  const s = state.savings || {total:0, history:[], milestoneNotified:false};
+  const goal = 1000;
+  const pct = Math.min(100, Math.round(s.total / goal * 100));
+  let h = '<div class="savings-card">';
+  h += '<div style="font-size:13px;opacity:0.85">当前储蓄金</div>';
+  h += '<div class="savings-amount">'+s.total.toFixed(1)+'<span>元</span></div>';
+  h += '<div class="savings-progress"><div class="savings-progress-bar" style="width:'+pct+'%">'+(pct>=10?pct+'%':' ')+'</div></div>';
+  h += '<div class="savings-goal">距离目标 '+goal+' 元还差 '+(goal-s.total>0?(goal-s.total).toFixed(1):'0')+' 元</div>';
+  if(s.total >= goal && !s.milestoneNotified){
+    h += '<div class="savings-milestone"><strong>🎉 储蓄金已达标！</strong><br>可获额外奖励 <strong>+50元</strong> 储蓄奖励！<br><br><button class="btn" onclick="claimSavingsReward()" style="background:#ffd700;color:#333;padding:8px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer">领取50元奖励</button></div>';
+  }
+  h += '</div>';
+  h += '<div class="savings-msg" style="text-align:center;color:#888;font-size:13px;margin-bottom:12px">每满1000元储蓄金，奖励50元作为储蓄奖励</div>';
+  h += '<div class="savings-actions">';
+  h += '<button class="savings-deposit" onclick="openSavingsDeposit()">💰 存入</button>';
+  h += '<button class="savings-withdraw" onclick="openSavingsWithdraw()">💸 取出</button>';
+  h += '</div>';
+  h += '<button class="savings-reset" onclick="openSavingsReset()" style="width:100%;margin-bottom:16px;padding:8px;border:none;border-radius:8px;cursor:pointer">🗑 清空储蓄记录</button>';
+  h += '<div class="savings-record">';
+  h += '<div class="savings-record-title">📋 存取记录</div>';
+  if(!s.history || s.history.length){
+    h += '<div class="savings-empty">暂无记录</div>';
+  } else {
+    s.history.slice(0, 30).forEach(function(r){
+      const cls = r.type === 'deposit' ? 'deposit' : (r.type === 'reward' ? 'reward' : 'withdraw');
+      const sign = r.type === 'withdraw' ? '-' : '+';
+      h += '<div class="savings-record-item '+cls+'">';
+      h += '<div><div>'+sign+r.amount.toFixed(1)+'元</div><div class="srec-reason">'+esc(r.reason)+' · '+r.date+'</div></div>';
+      h += '<div style="font-size:12px;color:#999">'+r.date+'</div>';
+      h += '</div>';
+    });
+  }
+  h += '</div>';
+  el.innerHTML = h;
+}
+
+function openSavingsDeposit(){
+  const amt = prompt('请输入存入金额（元）：','');
+  if(amt===null) return;
+  const n = parseFloat(amt);
+  if(isNaN(n)||n<=0){ alert('请输入有效金额'); return; }
+  state.savings = state.savings || {total:0, history:[], milestoneNotified:false};
+  state.savings.total += n;
+  state.savings.history.unshift({type:'deposit', amount:n, reason:'手动存入', date:today()});
+  save();
+  checkSavingsMilestone();
+  renderSavings();
+  if(state.currentView==='savings') renderNav();
+}
+
+function openSavingsWithdraw(){
+  const s = state.savings || {total:0};
+  if(s.total <= 0){ alert('储蓄金为0，无需取出'); return; }
+  const amt = prompt('当前储蓄 '+s.total.toFixed(1)+' 元\n请输入取出金额（元）：','');
+  if(amt===null) return;
+  const n = parseFloat(amt);
+  if(isNaN(n)||n<=0){ alert('请输入有效金额'); return; }
+  if(n > s.total){ alert('取出金额不能超过当前储蓄金'); return; }
+  state.savings.total -= n;
+  state.savings.history.unshift({type:'withdraw', amount:n, reason:'手动取出', date:today()});
+  save();
+  renderSavings();
+  if(state.currentView==='savings') renderNav();
+}
+
+function openSavingsReset(){
+  if(!confirm('确定要清空所有储蓄记录吗？此操作不可恢复。')) return;
+  state.savings = {total:0, history:[], milestoneNotified:false};
+  save();
+  renderSavings();
+  if(state.currentView==='savings') renderNav();
+}
+
+function checkSavingsMilestone(){
+  const s = state.savings;
+  if(!s || !s.milestoneNotified === undefined) return;
+  // milestoneNotified tracks if current 1000-block has been claimed
+  // When total increases enough, reset flag to allow next claim
+  const fullMilestones = Math.floor(s.total / 1000);
+  s.milestoneNotified = false; // always allow claiming when threshold met
+}
+
+function claimSavingsReward(){
+  if(!confirm('确认领取储蓄达标奖励 +50元？\n\n奖励将存入储蓄金，储蓄金达到后还可继续领取。')) return;
+  state.savings.total += 50;
+  state.savings.history.unshift({type:'reward', amount:50, reason:'储蓄达标奖励（每满1000元）', date:today()});
+  state.savings.milestoneNotified = false; // reset so next milestone can be triggered
+  save();
+  alert('恭喜！+50元已存入储蓄金！');
+  renderSavings();
+  if(state.currentView==='savings') renderNav();
+}
+
+
 function tierOfName(name){ const p=(state.prizes||[]).find(pp=>pp.name===name); return tierKey(p||{name:name||''}); }
 function tierKey(p){
   if(/龙珠/.test(p.name||'')) return 'longzhu';
@@ -213,7 +417,7 @@ const PUNISH_ITEMS = [
 ];
 
 // ---------- 状态 ----------
-function defaultState(){ return { completions:{}, schedule:{}, punishments:[], lottery:{pool:0, history:[]}, streakAwarded:{}, draws:[], prizes: DEFAULT_PRIZES.map(p=>({...p})), dailyLimit: 0, totalDraws: 0, parentPIN: null, pinTries: 0, pinLocked: 0 }; }
+function defaultState(){ return { completions:{}, schedule:{}, punishments:[], lottery:{pool:0, history:[]}, streakAwarded:{}, draws:[], prizes: DEFAULT_PRIZES.map(p=>({...p})), dailyLimit: 0, totalDraws: 0, parentPIN: null, pinTries: 0, pinLocked: 0, savings:{total:0, history:[], milestoneNotified:false} }; }
 let state = load() || defaultState();
 if(Array.isArray(state.prizes) && state.prizes.some(p=>typeof p==='string')) state.prizes = DEFAULT_PRIZES.map(p=>({...p}));
 state.prizes = (state.prizes && state.prizes.length) ? state.prizes : DEFAULT_PRIZES.map(p=>({...p}));
@@ -656,13 +860,15 @@ function esc(s){ return (s||'').replace(/"/g,'&quot;'); }
 // ---------- 切换标签 ----------
 function showTab(name){
   ['reward','plan','punish','stat'].forEach(t=>{
-    document.getElementById('tab-'+t).classList.toggle('hidden', t!==name);
+    document.getElementById('tab-'+t).classList.toggle('hidden', t!==name && t!=='savings');
+    if(t==='savings') document.getElementById('tab-savings').classList.toggle('hidden', name!=='savings');
     document.querySelector('.tabs button[data-tab="'+t+'"]').classList.toggle('active', t===name);
   });
   if(name==='reward') renderReward();
   if(name==='plan') renderPlan();
   if(name==='punish') renderPunish();
   if(name==='stat') renderStat();
+  if(name==='savings') renderSavings();
 }
 
 function renderAll(){
