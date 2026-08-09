@@ -173,6 +173,41 @@
     text-align: center;
     color: #333;
   }
+
+  /* ========== 云同步 ========== */
+  .cloud-fab{position:fixed;bottom:24px;right:24px;z-index:50;width:50px;height:50px;border-radius:50%;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(102,126,234,.4);transition:transform .2s,box-shadow .2s;animation:cloudFab 3s ease-in-out infinite}
+  @keyframes cloudFab{0%,100%{box-shadow:0 4px 16px rgba(102,126,234,.4)}50%{box-shadow:0 4px 24px rgba(102,126,234,.7)}}
+  .cloud-fab:hover{transform:scale(1.12)}
+  .cloud-fab.syncing{animation:cloudSpin 1s linear infinite}
+  @keyframes cloudSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  #cloudModal .modal-card{max-width:420px}
+  .cloud-title{font-size:18px;font-weight:bold;margin-bottom:4px;text-align:center}
+  .cloud-sub{margin-bottom:14px;font-size:13px;color:#888;text-align:center}
+  .cloud-row{margin-bottom:10px}
+  .cloud-lbl{font-size:13px;color:#555;font-weight:600;margin-bottom:3px}
+  .cloud-input{width:100%;padding:7px 10px;border:1.5px solid #d0d7e0;border-radius:8px;font-size:13px;box-sizing:border-box;outline:none;transition:border-color .2s}
+  .cloud-input:focus{border-color:#667eea}
+  .cloud-row-toggle{display:flex;align-items:center;justify-content:space-between;margin:8px 0;font-size:13px;color:#555}
+  .cloud-toggle{position:relative;width:38px;height:21px;flex-shrink:0}
+  .cloud-toggle input{opacity:0;width:0;height:0}
+  .cloud-toggle-slider{position:absolute;cursor:pointer;inset:0;background:#ccc;border-radius:21px;transition:.3s}
+  .cloud-toggle-slider::before{position:absolute;content:'';height:15px;width:15px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+  .cloud-toggle input:checked+.cloud-toggle-slider{background:#667eea}
+  .cloud-toggle input:checked+.cloud-toggle-slider::before{transform:translateX(17px)}
+  #cloudStatus{padding:9px 12px;border-radius:8px;font-size:13px;line-height:1.5;margin-bottom:10px;display:none}
+  .cloud-status-info{background:#eff6ff;color:#1d4ed8}
+  .cloud-status-ok{background:#ecfdf5;color:#059669}
+  .cloud-status-err{background:#fef2f2;color:#dc2626}
+  .cloud-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .cloud-btns button{flex:1;min-width:110px;padding:8px 10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+  .cloud-btns button:disabled{opacity:.5;cursor:not-allowed}
+  .cloud-btn-upload{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+  .cloud-btn-dl{background:#f1f5f9;color:#475569}
+  .cloud-btn-save{background:#ecfdf5;color:#059669}
+  .cloud-btn-clear{background:#fee2e2;color:#dc2626}
+  .cloud-gist-link{font-size:12px;color:#667eea;margin-top:10px;word-break:break-all;text-align:center}
+  .cloud-gist-link a{color:#667eea;text-decoration:none}
+
   .savings-milestone strong { font-size: 18px; }
 
 </style>
@@ -192,6 +227,7 @@
   <button data-tab="punish">⚠️ 惩罚记录</button>
   <button data-tab="stat">📊 统计</button>
   <button data-tab="savings">💰 储蓄</button>
+  <button data-tab="cloud" style="color:#667eea">☁️ 同步</button>
 </div>
 <div class="wrap">
   <div id="tab-reward"></div>
@@ -199,6 +235,71 @@
   <div id="tab-punish" class="hidden"></div>
   <div id="tab-stat" class="hidden"></div>
   <div id="tab-savings" class="hidden"></div>
+  <div id="tab-cloud" class="hidden">
+    <div style="padding:16px 4px;text-align:center">
+      <div style="font-size:22px;margin-bottom:8px">☁️</div>
+      <div style="font-size:15px;font-weight:bold;margin-bottom:4px">云同步设置</div>
+      <div style="font-size:13px;color:#888;margin-bottom:16px">数据加密存储在你的私有 GitHub Gist，多设备实时同步</div>
+      <div style="background:#f8faff;border-radius:12px;padding:16px;text-align:left;max-width:380px;margin:0 auto">
+        <div class="cloud-row">
+          <div class="cloud-lbl">🔑 GitHub Token</div>
+          <input type="password" id="cloudToken" class="cloud-input" placeholder="ghp_xxxx...（创建后粘贴）">
+        </div>
+        <div class="cloud-row">
+          <div class="cloud-lbl">🆔 Gist ID</div>
+          <input type="text" id="cloudGistId" class="cloud-input" placeholder="首次上传后自动生成，也可手动填写">
+        </div>
+        <div class="cloud-row-toggle">
+          <span>⚡ 自动同步（每次操作后）</span>
+          <label class="cloud-toggle"><input type="checkbox" id="cloudAutoSync"><span class="cloud-toggle-slider"></span></label>
+        </div>
+        <div id="cloudStatus"></div>
+        <div class="cloud-btns">
+          <button class="cloud-btn-upload" id="cloudUpload">⬆ 上传本地</button>
+          <button class="cloud-btn-dl" id="cloudDownload">⬇ 下载云端</button>
+        </div>
+        <div class="cloud-btns" style="margin-top:6px">
+          <button class="cloud-btn-save" id="cloudSave">💾 保存</button>
+          <button class="cloud-btn-clear" id="cloudClear">🗑 清除</button>
+        </div>
+        <div class="cloud-gist-link" id="cloudGistLink" style="display:none"></div>
+      </div>
+      <div style="margin-top:16px;font-size:12px;color:#aaa;line-height:1.8">
+        Token 仅存在本地 · 首次使用点「上传本地」创建 Gist<br>
+        之后在另一设备填入同一 Token 和 Gist ID 即可同步
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div id="cloudModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="cloud-title">☁️ 云同步设置</div>
+    <div class="cloud-sub">数据存储在你的私有 GitHub Gist</div>
+    <div class="cloud-row">
+      <div class="cloud-lbl">🔑 GitHub Token</div>
+      <input type="password" id="cloudToken" class="cloud-input" placeholder="ghp_xxxx...（创建后粘贴）">
+    </div>
+    <div class="cloud-row">
+      <div class="cloud-lbl">🆔 Gist ID</div>
+      <input type="text" id="cloudGistId" class="cloud-input" placeholder="首次上传后自动生成">
+    </div>
+    <div class="cloud-row-toggle">
+      <span>⚡ 自动同步</span>
+      <label class="cloud-toggle"><input type="checkbox" id="cloudAutoSync"><span class="cloud-toggle-slider"></span></label>
+    </div>
+    <div id="cloudStatus"></div>
+    <div class="cloud-btns">
+      <button class="cloud-btn-upload" id="cloudUpload">⬆ 上传本地</button>
+      <button class="cloud-btn-dl" id="cloudDownload">⬇ 下载云端</button>
+    </div>
+    <div class="cloud-btns" style="margin-top:6px">
+      <button class="cloud-btn-save" id="cloudSave">💾 保存</button>
+      <button class="cloud-btn-clear" id="cloudClear">🗑 清除</button>
+    </div>
+    <div class="cloud-gist-link" id="cloudGistLink" style="display:none"></div>
+  </div>
 </div>
 
 <div id="drawModal" class="modal hidden">
@@ -890,8 +991,209 @@ document.getElementById('next').onclick = ()=>{ viewDate=addDays(viewDate,1); re
 
 renderAll();
 
+
+// ---------- 云同步 ----------
+var GIST_API = 'https://api.github.com/gists';
+var GIST_FN = 'dijun_checkin_backup.json';
+var CLOUD_KEY = 'dijun_cloud_v1';
+
+function cloudGetConfig(){
+  try{ return JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}'); } catch(e){ return {}; }
+}
+function cloudSaveConfig(cfg){ localStorage.setItem(CLOUD_KEY, JSON.stringify(cfg)); }
+
+function openCloudModal(){
+  var modal = document.getElementById('cloudModal');
+  var cfg = cloudGetConfig();
+  document.getElementById('cloudToken').value = cfg.token||'';
+  document.getElementById('cloudGistId').value = cfg.gistId||'';
+  document.getElementById('cloudAutoSync').checked = !!cfg.autoSync;
+  var linkEl = document.getElementById('cloudGistLink');
+  var statusEl = document.getElementById('cloudStatus');
+  statusEl.style.display = 'none';
+  if(cfg.gistId){
+    linkEl.innerHTML = '<a href="https://gist.github.com/'+cfg.gistId+'" target="_blank">📎 查看 Gist</a>';
+    linkEl.style.display = 'block';
+  } else {
+    linkEl.style.display = 'none';
+  }
+  modal.classList.remove('hidden');
+}
+function closeCloudModal(){
+  document.getElementById('cloudModal').classList.add('hidden');
+}
+document.getElementById('cloudModal').addEventListener('click', function(e){
+  if(e.target.id==='cloudModal') closeCloudModal();
+});
+
+function cloudSetStatus(msg, type){
+  var el = document.getElementById('cloudStatus');
+  if(!el) return;
+  el.className = 'cloud-status-'+type;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function cloudBuildPayload(){
+  return JSON.stringify({v:2, updatedAt: new Date().toISOString(), state: state}, null, 0);
+}
+
+function cloudMergeState(remoteStr){
+  try {
+    var remote = JSON.parse(remoteStr);
+    if(!remote || !remote.state) throw new Error('格式错误');
+    // For arrays (punishments, draws) and objects (completions, schedule, savings):
+    // Remote wins (cloud is source of truth for merge)
+    var keys = ['completions','schedule','punishments','draws','lottery','savings','streakAwarded','prizes','dailyLimit','totalDraws','parentPIN'];
+    for(var i=0;i<keys.length;i++){
+      var k = keys[i];
+      if(remote.state[k] !== undefined){
+        state[k] = remote.state[k];
+      }
+    }
+    localStorage.setItem(STORE, JSON.stringify(state));
+    migrateState();
+  } catch(e) {
+    throw new Error('合并失败：'+e.message);
+  }
+}
+
+function cloudUpload(cb){
+  var cfg = cloudGetConfig();
+  if(!cfg.token){ cloudSetStatus('请先填写 GitHub Token 并保存', 'err'); return; }
+  var body = cloudBuildPayload();
+  var gistId = cfg.gistId;
+  var method = gistId ? 'PATCH' : 'POST';
+  var url = gistId ? GIST_API+'/'+gistId : GIST_API;
+  cloudSetStatus('正在上传...', 'info');
+  document.getElementById('cloudUpload').disabled = true;
+  document.getElementById('cloudFab').classList.add('syncing');
+  fetch(url, {
+    method: method,
+    headers: {
+      'Authorization': 'Bearer '+cfg.token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({description:'帝君打卡数据备份', public:false, files: {[GIST_FN]:{content:body}}})
+  }).then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.id){
+        if(!gistId){
+          cfg.gistId = data.id;
+          cloudSaveConfig(cfg);
+          document.getElementById('cloudGistId').value = data.id;
+        }
+        cloudSetStatus('✅ 上传成功！'+new Date().toLocaleString('zh-CN'), 'ok');
+        var linkEl = document.getElementById('cloudGistLink');
+        linkEl.innerHTML = '<a href="'+data.html_url+'" target="_blank">📎 查看 Gist</a>';
+        linkEl.style.display = 'block';
+        // Also update cloud tab if visible
+        var tabInput = document.getElementById('cloudGistId');
+        if(tabInput) tabInput.value = data.id;
+        if(cb) cb(true);
+      } else {
+        cloudSetStatus('❌ 失败：'+(data.message||'未知错误'), 'err');
+        if(cb) cb(false);
+      }
+    })
+    .catch(function(e){
+      cloudSetStatus('❌ 网络错误：'+e.message, 'err');
+      if(cb) cb(false);
+    })
+    .finally(function(){
+      document.getElementById('cloudUpload').disabled = false;
+      document.getElementById('cloudFab').classList.remove('syncing');
+    });
+}
+
+function cloudDownload(){
+  var cfg = cloudGetConfig();
+  if(!cfg.token){ cloudSetStatus('请先填写 Token 并保存', 'err'); return; }
+  if(!cfg.gistId){ cloudSetStatus('请先上传一次创建云端仓库', 'err'); return; }
+  cloudSetStatus('正在下载...', 'info');
+  document.getElementById('cloudDownload').disabled = true;
+  document.getElementById('cloudFab').classList.add('syncing');
+  fetch(GIST_API+'/'+cfg.gistId, {
+    headers: {
+      'Authorization': 'Bearer '+cfg.token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    }
+  }).then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.files && data.files[GIST_FN]){
+        cloudMergeState(data.files[GIST_FN].content);
+        cloudSetStatus('✅ 下载成功，数据已合并！'+new Date().toLocaleString('zh-CN'), 'ok');
+        renderAll();
+      } else {
+        cloudSetStatus('❌ 未找到备份文件', 'err');
+      }
+    })
+    .catch(function(e){
+      cloudSetStatus('❌ 网络错误：'+e.message, 'err');
+    })
+    .finally(function(){
+      document.getElementById('cloudDownload').disabled = false;
+      document.getElementById('cloudFab').classList.remove('syncing');
+    });
+}
+
+document.getElementById('cloudSave').onclick = function(){
+  var token = document.getElementById('cloudToken').value.trim();
+  var gistId = document.getElementById('cloudGistId').value.trim();
+  var autoSync = document.getElementById('cloudAutoSync').checked;
+  if(!token){ cloudSetStatus('Token 不能为空', 'err'); return; }
+  cloudSaveConfig({token:token, gistId:gistId, autoSync:autoSync});
+  cloudSetStatus('✅ 设置已保存！', 'ok');
+  if(gistId){
+    var linkEl = document.getElementById('cloudGistLink');
+    linkEl.innerHTML = '<a href="https://gist.github.com/'+gistId+'" target="_blank">📎 查看 Gist</a>';
+    linkEl.style.display = 'block';
+  }
+};
+
+document.getElementById('cloudClear').onclick = function(){
+  if(!confirm('确定清除云同步设置？本地数据不受影响。')) return;
+  localStorage.removeItem(CLOUD_KEY);
+  document.getElementById('cloudToken').value = '';
+  document.getElementById('cloudGistId').value = '';
+  document.getElementById('cloudAutoSync').checked = false;
+  document.getElementById('cloudGistLink').style.display = 'none';
+  cloudSetStatus('设置已清除', 'info');
+};
+
+document.getElementById('cloudUpload').onclick = function(){ cloudUpload(); };
+document.getElementById('cloudDownload').onclick = function(){ cloudDownload(); };
+
+// Show/hide cloud tab in UI
+var _origShowTab = showTab;
+showTab = function(name){
+  _origShowTab.apply(this, arguments);
+  if(name==='cloud') openCloudModal();
+};
+
+// Auto-sync hook: wrap save()
+var _origSave = save;
+save = function(){
+  _origSave.apply(this, arguments);
+  var cfg = cloudGetConfig();
+  if(cfg.token && cfg.autoSync && cfg.gistId){
+    if(window._cloudSyncing) return;
+    window._cloudSyncing = true;
+    var self = this;
+    setTimeout(function(){
+      cloudUpload(function(ok){
+        window._cloudSyncing = false;
+      });
+    }, 2500);
+  }
+};
+
 </script>
 
+<button class="cloud-fab" id="cloudFab" title="云同步" onclick="openCloudModal()">☁️</button>
 </body>
 </html>
 
